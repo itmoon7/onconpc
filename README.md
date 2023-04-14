@@ -1,4 +1,4 @@
-# onconpc
+# OncoNPC
 We developed <b>OncoNPC</b> (<b>Onco</b>logy <b>N</b>GS-based <b>P</b>rimary cancer type <b>C</b>lassifier), a molecular cancer type classifier trained on multicenter targeted panel sequencing data. OncoNPC utilized somatic alterations including mutations (single nucleotide variants and indels), mutational signatures, copy number alterations, as well as patient age at the time of sequencing and sex to jointly predict cancer type.
 
 We utilized<br>
