@@ -170,5 +170,4 @@ def get_individual_pred_interpretation(shap_pred_sample_df, feature_sample_df,
 
 	fig.tight_layout()
 	filepath = 'cup_prediction_explanation/'
-	plt.savefig(filepath + str(filename) + '.pdf', bbox_inches='tight')
-	plt.close()
+	plt.show()
