@@ -9,7 +9,7 @@ We utilized<br>
   <li>Survival analysis (R survival v3.2.7, stats v4.0.2, Python lifelines v0.27.4, scipy v1.7.1)</li>
 </ul>
 
-See <a href="https://www.medrxiv.org/content/10.1101/2022.12.22.22283696v1"><em>here</em></a> for our preprint.
+See this <a href="https://github.com/itmoon7/onconpc/blob/main/onconpc_prediction_and_explanation_for_cup_tumors.ipynb"><em>notebook example</em></a> and our <a href="https://www.medrxiv.org/content/10.1101/2022.12.22.22283696v1"><em>preprint manuscript</em></a>.
 
 Citation:
 @article{moon2022utilizing,
