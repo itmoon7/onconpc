@@ -1,5 +1,5 @@
 # onconpc
-Clinical sequencing-based primary site classifier.
+We developed <b>OncoNPC<\b> (\textbf{Onco}logy \textbf{N}GS-based \textbf{P}rimary cancer type \textbf{C}lassifier), a molecular cancer type classifier trained on multicenter targeted panel sequencing data (Fig. \ref{fig:cup_method}). OncoNPC utilized somatic alterations including mutations (single nucleotide variants and indels), mutational signatures, copy number alterations, as well as patient age at the time of sequencing and sex to jointly predict cancer type using a XGBoost algorithm
 
 We utilized the R (v4.0.2) and Python (v3.9.13) programming languages for OncoNPC feature processing (R deconstructSigs v1.8.0), OncoNPC model development and interpretation (Python xgboost v1.2.0, shap v0.41.0), and survival analysis (R survival v3.2.7, stats v4.0.2, Python lifelines v0.27.4, scipy v1.7.1)
 
