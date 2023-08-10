@@ -9,14 +9,14 @@ We utilized<br>
   <li>Survival analysis (R survival v3.2.7, stats v4.0.2, Python lifelines v0.27.4, scipy v1.7.1)</li>
 </ul>
 
-See this <a href="https://github.com/itmoon7/onconpc/blob/main/onconpc_prediction_and_explanation_for_cup_tumors.ipynb"><em>notebook example</em></a> and our <a href="https://www.medrxiv.org/content/10.1101/2022.12.22.22283696v1"><em>preprint manuscript</em></a>.
+See this <a href="https://github.com/itmoon7/onconpc/blob/main/onconpc_prediction_and_explanation_for_cup_tumors.ipynb"><em>notebook example</em></a> and our <a href="https://www.nature.com/articles/s41591-023-02482-6"><em>manuscript</em></a>.
 
 Citation:
-@article{moon2022utilizing,
-  title={Utilizing Electronic Health Records (EHR) and Tumor Panel Sequencing to Demystify Prognosis of Cancer of Unknown Primary (CUP) patients},
+@article{moon2023machine,
+  title={Machine learning for genetics-based classification and treatment response prediction in cancer of unknown primary},
   author={Moon, Intae and LoPiccolo, Jaclyn and Baca, Sylvan C and Sholl, Lynette M and Kehl, Kenneth L and Hassett, Michael J and Liu, David and Schrag, Deborah and Gusev, Alexander},
-  journal={medRxiv},
-  pages={2022--12},
-  year={2022},
-  publisher={Cold Spring Harbor Laboratory Press}
+  journal={Nature Medicine},
+  pages={1--11},
+  year={2023},
+  publisher={Nature Publishing Group US New York}
 }
