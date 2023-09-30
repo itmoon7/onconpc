@@ -5,12 +5,20 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import xgboost as xgb
-from typing import List
-
+from typing import List, Mapping, Optional
 
 def get_xgboost_cancer_type_preds(xgb_model: xgb.sklearn.XGBClassifier,
 								  features_test_df: pd.DataFrame,
 								  cancer_types: List[str]) -> pd.DataFrame:
+	"""Returns cancer type predictions for test set using XGBoost model.
+	
+	Args:
+		xgb_model: XGBoost model.
+		features_test_df: Test set features.
+		cancer_types: List of cancer types.
+	Returns:
+		pd.DataFrame containing cancer type predictions and prediction probabilities.
+	"""
 	ckp_test_pred_probs = xgb_model.predict_proba(features_test_df.values)
 	ckp_test_preds = ckp_test_pred_probs.argmax(axis=1)
 	max_posteriors = [pred_dist[max_idx] for pred_dist, max_idx in
@@ -22,8 +30,16 @@ def get_xgboost_cancer_type_preds(xgb_model: xgb.sklearn.XGBClassifier,
 	ckp_test_preds_df['cancer_type'] = [cancer_types[max_idx] for max_idx in ckp_test_preds]
 	return ckp_test_preds_df
 
-def obtain_shap_values(model, data: pd.DataFrame):
-	"""Returns SHAP values for predictions based on data."""
+def obtain_shap_values(model: xgb.sklearn.XGBClassifier,
+					   data: pd.DataFrame) -> np.ndarray:
+	"""Returns SHAP values for predictions based on data.
+	
+	Args:
+		model: XGBoost model.
+		data: Data to obtain SHAP values for.
+	Returns:
+		Numpy array containing SHAP values.
+	"""
 	new_column_names = []
 	# Get SHAP values using the model in byte array.
 	mybooster = model.get_booster()
@@ -34,7 +50,14 @@ def obtain_shap_values(model, data: pd.DataFrame):
 	shap_ex = shap.TreeExplainer(mybooster)
 	return shap_ex.shap_values(data)
 
-def partiton_feature_names_by_group(fature_names):
+def partiton_feature_names_by_group(fature_names: List[str]):
+	"""Partitions feature names into groups.
+	
+	Args:
+		feature_names: List of feature names.
+	Returns:
+		Dictionary mapping feature groups to feature names.
+	"""
 	feature_group_to_features_dict = collections.defaultdict(list)
 	for feat in fature_names:
 		if 'SBS' in feat:
@@ -47,11 +70,23 @@ def partiton_feature_names_by_group(fature_names):
 			feature_group_to_features_dict['mutation'].append(feat)
 	return feature_group_to_features_dict
 
-def get_individual_pred_interpretation(shap_pred_sample_df, feature_sample_df,
-									   feature_group_to_features_dict,
-									   sample_info=None, filename=None,
-									   top_feature_num=10):
+def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
+									   feature_sample_df: pd.DataFrame,
+									   feature_group_to_features_dict: Mapping[str, List[str]],
+									   sample_info: Optional[str]=None,
+									   filename: Optional[str]=None,
+									   top_feature_num: int=10):
+	"""
+	Get individual prediction interpretation for a given tumor sample.
 
+	Args:
+		shap_pred_sample_df: DataFrame containing SHAP values for a given tumor sample.
+		feature_sample_df: DataFrame containing feature values for a given tumor sample.
+		feature_group_to_features_dict: Dictionary mapping feature groups to feature names.
+		sample_info: Sample information to be displayed.
+		filename: Filename to save the figure.
+		top_feature_num: Number of top features to display.
+	"""
 	# set font size and font family
 	fig, ax = plt.subplots()
 	plt.rcParams.update({'font.size': 15})

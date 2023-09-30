@@ -13,7 +13,7 @@ The following script provides features and labels for a supervised training of c
 import os
 from absl import app
 from absl import flags
-from typing import Sequence, Any
+from typing import List, Any, Tuple
 
 import glob
 import numpy as np
@@ -24,14 +24,22 @@ from tqdm import tqdm
 # import warnings
 # warnings.filterwarnings("ignore", message="Numerical issues were encountered ")
 FLAGS = flags.FLAGS
-_FILEPATH = '../../Documents/analysis/data'
-_FILENAME_SUFFIX = flags.DEFINE_string('filename_suffix', None, 'Filename suffix for processed files.')
+_FILEPATH = '../data/seq_panel_data'
+_FILENAME_SUFFIX = flags.DEFINE_string('filename_suffix', 'default', 'Filename suffix for processed files.')
 
-def obtain_mutation_signatures(df_trinuc_feats):
+def obtain_mutation_signatures(df_trinuc_feats: pd.DataFrame) -> pd.DataFrame:
 	"""Transforms tri-nucleotide features into mutation signature based features.
+
+	Args:
+		df_trinuc_feats: DataFrame containing tri-nucleotide features.
+	Returns:
+		mut_sig_based_df: DataFrame containing mutation signature based features.
 	"""
 	# Load Mutational Signatures COSMIC data.
-	file_names = glob.glob('data/mutation_signatures/sigProfiler*.csv')
+	file_names = glob.glob('../data/mutation_signatures/sigProfiler*.csv')
+	# Check if the directory exists.
+	if len(file_names) == 0:
+		raise ValueError('No mutation signatures data.')
 	file_names_key = [file_name.split('_')[-1][:-4] for file_name in file_names]
 	sbs_conversion_df_dict = {}	
 	for i in range(len(file_names)):
@@ -68,8 +76,15 @@ def obtain_mutation_signatures(df_trinuc_feats):
 		mut_sig_based_df[key] = mut_sig_vals
 	return mut_sig_based_df
 
-
-def merge_dfs(df_list, ids_common):
+def merge_dfs(df_list: pd.DataFrame, ids_common: List[str]) -> pd.DataFrame:
+	"""Merges a list of dataframes using common sample IDs.
+	
+	Args:
+		df_list: List of dataframes to merge.
+		ids_common: Common sample IDs.
+	Returns:
+		df_merged_to_return: Merged dataframe.
+	"""
 	for idx, df in enumerate(df_list):
 		if idx == 0:
 			df_merged_to_return = df.loc[ids_common]
@@ -77,14 +92,25 @@ def merge_dfs(df_list, ids_common):
 			df_merged_to_return = pd.merge(df_merged_to_return, df.loc[ids_common], how = 'left', left_index = True, right_index = True)
 	return df_merged_to_return
 
-
 def pre_process_features_genie(df_mutations: pd.DataFrame,
 							   df_cna: pd.DataFrame,
 							   df_mutation_signatures: pd.DataFrame,
 							   df_patients: pd.DataFrame,
-							   cancer_types: Sequence, 
-							   id_column: str = 'SAMPLE_ID'):
-	"""Pre-process genetics data to create feature df for GENIE."""
+							   cancer_types: List[str], 
+							   id_column: str = 'SAMPLE_ID') -> Tuple[pd.DataFrame, pd.DataFrame]:
+	"""Pre-process genetics data to create feature df for GENIE.
+	
+	Args:
+		df_mutations: DataFrame containing mutation data.
+		df_cna: DataFrame containing CNA data.
+		df_mutation_signatures: DataFrame containing mutation signature data.
+		df_patients: DataFrame containing patient data.
+		cancer_types: List of cancer types.
+		id_column: Column name for sample IDs.
+	Returns:
+		df_features_merged_final: DataFrame containing merged features.
+		df_labels_final: DataFrame containing labels.
+	"""
 	# Get mutation features.
 	sample_ids = df_patients[id_column].values
 	df_mutations_chosen = df_mutations.loc[df_mutations.Tumor_Sample_Barcode.isin(sample_ids)]
@@ -142,16 +168,29 @@ def pre_process_features_genie(df_mutations: pd.DataFrame,
 	df_labels_final['cancer_type'] = df_labels.values
 	return df_features_merged_final, df_labels_final	
 
-
 def pre_process_features_dfci(df_mutations,
 							  df_cna,
 							  df_mutation_signatures,
 							  df_patients,
 							  cancer_types, 
 							  cup_samples_ids: Any = None,
-							  id_column: str = 'UNIQUE_SAMPLE_ID',
-							  return_cup: bool = False):
-	"""Pre-process genetics data to create feature df for DFCI data."""
+							  id_column: str = 'UNIQUE_SAMPLE_ID'
+							  ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+	"""Pre-process genetics data to create feature df for DFCI data.
+	
+	Args:
+		df_mutations: DataFrame containing mutation data.
+		df_cna: DataFrame containing CNA data.
+		df_mutation_signatures: DataFrame containing mutation signature data.
+		df_patients: DataFrame containing patient data.
+		cancer_types: List of cancer types.
+		cup_samples_ids: List of CUP sample IDs.
+		id_column: Column name for sample IDs.
+	Returns:
+		df_features_merged_ckps: DataFrame containing merged features for CKP samples.
+		df_labels_final: DataFrame containing labels for CKP samples.
+		df_features_merged_cups: DataFrame containing merged features for CUP samples.
+	"""
 	# Get mutation features.
 	sample_ids = df_patients[id_column].values
 	df_mutations_chosen = df_mutations.loc[df_mutations[id_column].isin(sample_ids)]
@@ -190,7 +229,7 @@ def pre_process_features_dfci(df_mutations,
 				  set(df_mutation_signatures.index) & set(df_sex_age_feature.index))
 	dfs_list = [df_mutation_feature, df_cna_chosen, df_mutation_signatures, df_sex_age_feature]
 	df_features_merged = merge_dfs(dfs_list, common_ids)
-	# Make some of the gene names consistent across old and new data.
+	# Make gene names consistent across GENIE and PROFILE.
 	profile_old_new_gene_mapping = {}
 	profile_old_new_gene_mapping['C17ORF70'] = 'FAAP100' 
 	profile_old_new_gene_mapping['C17orf70_mut'] = 'FAAP100_mut'
@@ -210,22 +249,21 @@ def pre_process_features_dfci(df_mutations,
 							   .loc[set(df_features_merged.index) & set(cup_samples_ids)])
 	df_labels = df_patients_id_indexed.loc[df_features_merged_ckps.index]['CANCER_TYPE']
 	df_labels_final = pd.DataFrame([cancer_types.index(val) for val in df_labels.values],
-	                               columns=['cancer_label'], index=df_labels.index)
+								   columns=['cancer_label'], index=df_labels.index)
 	df_labels_final['cancer_type'] = df_labels.values
 	return df_features_merged_ckps, df_labels_final, df_features_merged_cups
-
 
 def main(argv):
 	# Loading GENIE data.
 	df_patients_genie = pd.read_csv(os.path.join(_FILEPATH, "genie/data_clinical_patient_5.0-public.txt"), sep = '\t', comment='#')
 	df_samples_genie = pd.read_csv(os.path.join(_FILEPATH, "genie/data_clinical_sample_5.0-public.txt"), sep = '\t', comment='#')
 
-	# Choose panels to choose from MSK and VICC from GENIE.
+	# Choose panels from GENIE data.
 	panels = ['MSK-IMPACT468', 'MSK-IMPACT410', 'MSK-IMPACT341', 'VICC-01-T7', 'VICC-01-T5A']
 	df_samples_genie = df_samples_genie.loc[df_samples_genie.SEQ_ASSAY_ID.isin(panels)]
 	df_genie_patients = pd.merge(df_patients_genie, df_samples_genie, how = 'right', on = 'PATIENT_ID')
 
-	# Choose centers of interest : MSK, VICC, WAKE, UCSF for now
+	# Choose centers of interest : MSK, VICC
 	df_genie_patients = df_genie_patients.loc[df_genie_patients.CENTER.isin(['MSK', 'VICC'])]
 	# Load GENIE mutation data.
 	df_mutations_genie = pd.read_csv(os.path.join(_FILEPATH, "genie/data_mutations_extended_5.0-public.txt"), sep = '\t', comment='#')
@@ -233,24 +271,26 @@ def main(argv):
 	df_cna_genie = pd.read_csv(os.path.join(_FILEPATH, "genie/data_CNA_5.0-public.txt"), sep = '\t', comment='#')
 	df_cna_genie = df_cna_genie.set_index('Hugo_Symbol').T
 	df_cna_genie.rename(columns = {'Hugo_Symbol' : 'Tumor_Sample_Barcode'}, inplace = True)
-	# Load data for GENIE, contraining 96 single base substitutions in a trinucleotide context; use deconstructSigs.
-	df_trinuc_feats_genie = pd.read_csv(os.path.join(_FILEPATH, "genie/genie_MSK_UCSF_VICC_trinuc_6_3_21.csv"), sep = ',')
+	# Load data for GENIE, contraining 96 single base substitutions in a trinucleotide context;
+	# Used deconstructSigs (see deconstructSigs_trinucs_data.R)
+	df_trinuc_feats_genie = pd.read_csv(os.path.join(_FILEPATH, "genie/trinucs_genie_msk_vicc.csv"), sep = ',')
 	df_trinuc_feats_genie.set_index('Unnamed: 0', inplace = True)
 	# Load Profile DFCI patients and samples info.
-	df_patients_dfci = pd.read_csv(os.path.join(_FILEPATH, "Profile_v2/profile_patient_info_3_2_21"), sep = '\t', comment='#')
-	df_samples_dfci = pd.read_csv(os.path.join(_FILEPATH, "Profile_v2/profile_samples_info_3_2_21"), sep = '\t', comment='#')
+	df_samples_dfci = pd.read_csv(os.path.join(_FILEPATH, "dfci/profile_samples_info"), sep = '\t', comment='#')
 
 	# Load Profile DFCI mutation and CNA data.
-	df_mutations_dfci = pd.read_csv(os.path.join(_FILEPATH, "Profile_v2/profile_mutation_3_2_21"), sep = '\t', comment='#')
+	df_mutations_dfci = pd.read_csv(os.path.join(_FILEPATH, "dfci/profile_mutation_dfci"), sep = '\t', comment='#')
 	# Drop NaN canonical genes.
 	df_mutations_dfci.dropna(subset=['CANONICAL_GENE'], inplace=True)
-	df_cna_dfci = pd.read_csv(os.path.join(_FILEPATH, "Profile_v2/profile_cnv_3_2_21"), sep = '\t', comment='#')
+	df_mutations_dfci['UNIQUE_SAMPLE_ID'] = [float(idx[:-3]) for idx in df_mutations_dfci.UNIQUE_SAMPLE_ID.values]
+	df_cna_dfci = pd.read_csv(os.path.join(_FILEPATH, "dfci/profile_cnv"), sep = '\t', comment='#')
 	df_cna_dfci.set_index('Unnamed: 0', inplace = True)
 
-	# Load data for Profile DFCI, contraining 96 single base substitutions in a trinucleotide context; use deconstructSigs.
-	df_trinuc_feats_dfci = pd.read_csv(os.path.join(_FILEPATH, "Profile_v2/profile_trinuc_3_2_21.csv"), comment='#')
+	# Load data for Profile DFCI, contraining 96 single base substitutions in a trinucleotide context
+	# Used deconstructSigs (see deconstructSigs_trinucs_data.R)
+	df_trinuc_feats_dfci = pd.read_csv(os.path.join(_FILEPATH, "dfci/trinucs_dfci_profile.csv"), comment='#')
 	df_trinuc_feats_dfci.set_index('Unnamed: 0', inplace = True)
-	df_trinuc_feats_dfci.index = [int(idx[:-3]) for idx in df_trinuc_feats_dfci.index]		
+	df_trinuc_feats_dfci.index = [float(idx[:-3]) for idx in df_trinuc_feats_dfci.index]		
 
 	# Get mutation signature features based on tri-nucleotide data.
 	df_mut_sigs_dfci = obtain_mutation_signatures(df_trinuc_feats_dfci)
@@ -272,13 +312,12 @@ def main(argv):
 	df_cup_samples_dfci.CANCER_TYPE = 'Cancer of Unknown Primary'
 		
 	# Get OncoTree defined cancer types to include.
-	with open('data/cancer_type_to_oncotree_subtypes_dic.pkl', 'rb') as handle:
+	with open('../data/cancer_type_to_oncotree_subtypes_dict.pkl', 'rb') as handle:
 		cancers_to_include_dic = pickle.load(handle)
-	cancer_types_oi = list(cancers_to_include_dic.keys())
 
 	# Get total detailed cancer types under consideration in GENIE project.
 	total_detailed_cancers_genie = []
-	for cancer, detailed_cancers in cancers_to_include_dic.items():
+	for _, detailed_cancers in cancers_to_include_dic.items():
 		total_detailed_cancers_genie = total_detailed_cancers_genie + list(detailed_cancers)
 
 	# Data pre-processing for AACR GENIE.	
@@ -328,10 +367,8 @@ def main(argv):
 	# Process CUP samples.
 	df_dfci_samples_cups = df_samples_dfci.loc[df_samples_dfci.UNIQUE_SAMPLE_ID.isin(df_cup_samples_dfci.UNIQUE_SAMPLE_ID.values)]
 	df_dfci_samples_cups['CANCER_TYPE'] = 'Cancer of Unknown Primary'
-	df_dfci_samples_all = pd.concat([df_dfci_samples_final, df_dfci_samples_cups])
 
 	# Get final cancer types of interest.
-	cancer_types_dfci = list(np.unique(df_dfci_samples_final.CANCER_TYPE.values))
 	df_cancer_counts_dfci = pd.value_counts(df_dfci_samples_final.CANCER_TYPE.values, sort = True)
 	print('	PROFILE cancer counts')
 	print(df_cancer_counts_dfci)
@@ -340,8 +377,6 @@ def main(argv):
 	cancer_counts_genie = pd.value_counts(df_genie_patients_final.CANCER_TYPE.values, sort = True)
 	print('	GENIE cancer counts')
 	print(cancer_counts_genie) 
-
-	# breakpoint()
 
 	# Cancer names should be consistent.
 	assert set(cancer_counts_genie.index) == set(df_cancer_counts_dfci.index)
@@ -361,35 +396,28 @@ def main(argv):
 	(df_features_dfci,
 	 df_labels_dfci,
 	 df_features_cup) = pre_process_features_dfci(df_mutations_dfci,
-													   df_cna_dfci,
-													   df_mut_sigs_dfci,
-													   df_samples_dfci_total, 
-													   cancer_types_final,
-													   cup_samples_ids=df_cup_samples_dfci.UNIQUE_SAMPLE_ID.values, 
-													   return_cup=True)
-	# Get other CKPs here!
-	# [TODO]
+											   df_cna_dfci,
+											   df_mut_sigs_dfci,
+											   df_samples_dfci_total, 
+											   cancer_types_final,
+											   cup_samples_ids=df_cup_samples_dfci.UNIQUE_SAMPLE_ID.values)
 	
 	print('	Exporting features and labels of interest...')
+	# Load onconpc_processed_cups_data
+	# df_features_cups = pd.read_csv('data/onconpc_processed_cups_data', sep = '\t', index_col = 0)
 	common_features = set(df_features_genie.columns) & set(df_features_dfci.columns)
 	df_features_combined = pd.concat([df_features_genie[common_features], df_features_dfci[common_features]])
 	df_labels_combined = pd.concat([df_labels_genie, df_labels_dfci])
 	df_features_cup = df_features_cup[common_features]
 	# Export common features
 	common_features_df = pd.DataFrame(common_features,
-	                                  index=np.arange(len(common_features)),
-	                                  columns=['common_features'])
-	common_features_df.to_csv('data/common_features_df', sep = '\t', index = False)
-
+									  index=np.arange(len(common_features)),
+									  columns=['common_features'])
+	common_features_df.to_csv('../data/common_features_df', sep = '\t', index = False)
 	# Export combined (Profile & GENIE) features and labels.
-	df_features_combined.to_csv(f'data/features_combined_{_FILENAME_SUFFIX.value}', sep='\t', index=True)
-	df_labels_combined.to_csv(f'data/labels_combined_{_FILENAME_SUFFIX.value}', sep='\t', index=True)
-	df_features_cup.to_csv(f'data/features_combined_cup_{_FILENAME_SUFFIX.value}', sep='\t', index=True)
-
-	"""
-	TODO: check common features and dataframes are identical
-	
-	"""
+	df_features_combined.to_csv(f'../data/features_combined_{_FILENAME_SUFFIX.value}', sep='\t', index=True)
+	df_labels_combined.to_csv(f'../data/labels_combined_{_FILENAME_SUFFIX.value}', sep='\t', index=True)
+	df_features_cup.to_csv(f'../data/features_combined_cup_{_FILENAME_SUFFIX.value}', sep='\t', index=True)
 	return
 
 if __name__ == '__main__':
