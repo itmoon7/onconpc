@@ -71,11 +71,6 @@ def main(argv=None):
 		features_ckp_df.index.name = 'DFCI_MRN_FOR_PROFILE'
 		labels_ckp_df.index.name = 'DFCI_MRN_FOR_PROFILE'
 		features_cup_df.index.name = 'DFCI_MRN_FOR_PROFILE'
-		if use_held_out_set:
-			heldout_ckps_preds_df = pd.read_csv(os.path.join(DATA_PATH, 'heldout_ckps_preds_onco_tree_based_dev'), sep = '\t')
-			heldout_ckps_preds_df.set_index(heldout_ckps_preds_df.columns[0], inplace = True)
-			held_out_indices = utils_training.get_new_indices([idx[:-3] for idx in heldout_ckps_preds_df.index],
-													 onconpc_sample_id_to_dfci_mrn)
 	elif index_profile_samples_by == 'SAMPLE_ACCESSION_NBR':
 		# Load ../data/internal_training_data/onconpc_sample_id_to_sample_accession_nbr.pkl
 		with open(os.path.join(DATA_PATH, 'onconpc_sample_id_to_sample_accession_nbr.pkl'), "rb") as fp:   # Unpickling
@@ -88,12 +83,11 @@ def main(argv=None):
 		features_ckp_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
 		labels_ckp_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
 		features_cup_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
-		if use_held_out_set:
-			heldout_ckps_preds_df = pd.read_csv(os.path.join(DATA_PATH, 'heldout_ckps_preds_onco_tree_based_6_3_21'), sep = '\t')
-			heldout_ckps_preds_df.set_index(heldout_ckps_preds_df.columns[0], inplace = True)
-			held_out_indices = utils_training.get_new_indices([idx[:-3] for idx in heldout_ckps_preds_df.index],
-													 onconpc_sample_id_to_sample_accession_nbr)
 	if use_held_out_set:
+		heldout_ckps_preds_df = pd.read_csv(os.path.join(DATA_PATH, 'heldout_ckps_preds_onco_tree_based_dev'), sep = '\t')
+		heldout_ckps_preds_df.set_index(heldout_ckps_preds_df.columns[0], inplace = True)
+		held_out_indices = utils_training.get_new_indices([idx[:-3] for idx in heldout_ckps_preds_df.index],
+													onconpc_sample_id_to_sample_accession_nbr)
 		# Exclude held out samples from training
 		indices_to_choose = set(features_ckp_df.index) - set(held_out_indices)
 		features_ckp_df = features_ckp_df.loc[indices_to_choose]
