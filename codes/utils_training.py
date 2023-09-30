@@ -261,6 +261,11 @@ def perform_k_fold(data: pd.DataFrame,
 		X_val = data.loc[val_labels_sampled.index]
 		X_train = data.loc[list(set(data.index) - set(X_val.index))]
 		y_train = labels.loc[X_train.index]['cancer_label']
+		# Standardize Age based on train data
+		age_mean = X_train['Age'].mean()
+		age_std = X_train['Age'].std()
+		X_train['Age'] = (X_train['Age'] - age_mean) / age_std
+		X_val['Age'] = (X_val['Age'] - age_mean) / age_std
 		xg_clf, pred_probs_on_val, performance_report = fit_and_evaluate_model(X_train.values,
 																		 y_train.values,
 																		 X_val.values,
