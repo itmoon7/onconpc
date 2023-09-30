@@ -3,7 +3,7 @@ We developed <b>OncoNPC</b> (<b>Onco</b>logy <b>N</b>GS-based <b>P</b>rimary can
 
 We utilized<br>
 <ul>
-  <li>R (v4.0.2) and Python (v3.9.13) programming languages</li>
+  <li>R (v4.3.1) and Python (v3.9.13) programming languages</li>
   <li>OncoNPC somatic mutation processing (R deconstructSigs v1.8.0)</li>
   <li>OncoNPC model development and interpretation (Python xgboost v1.2.0, shap v0.41.0)</li>
   <li>Survival analysis (R survival v3.2.7, stats v4.0.2, Python lifelines v0.27.4, scipy v1.7.1)</li>
