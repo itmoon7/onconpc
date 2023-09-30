@@ -39,9 +39,9 @@ def standardize_feat_names(curr_feat_names: List[str]) -> List[str]:
 	for feat in curr_feat_names:
 		if '_mut' in feat:
 			new_feat_names.append(feat.replace('_mut', '_MUT'))
-		elif 'AGE' in feat:
+		elif 'AGE' in feat or 'Age' in feat:
 			new_feat_names.append('Age')
-		elif 'GENDER' in feat:
+		elif 'GENDER' in feat or 'Sex' in feat:
 			new_feat_names.append('Sex')
 		elif 'SBS' in feat:
 			new_feat_names.append(feat)
