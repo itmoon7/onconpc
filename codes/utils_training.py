@@ -1,11 +1,16 @@
-import pandas as pd
-from typing import Optional, List, Tuple, Mapping, Union
-from xgboost import XGBClassifier
-from sklearn.metrics import classification_report
-import pandas as pd
-import numpy as np
 import os
 import random
+from typing import List, Mapping, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import classification_report
+from xgboost import XGBClassifier
+
+"""
+Author: Intae Moon
+The following functions are used for training and evaluating XGBoost-based OncoNPC model.
+"""
 
 def get_new_indices(curr_indices: List[Union[str, float]],
 					mapping_dict: Mapping[float, Union[float,str]],
@@ -174,8 +179,8 @@ def get_sample_indices_and_labels_based_on_cut_off(pred_probs: np.ndarray,
 
 def fit_and_evaluate_model(X_train: np.ndarray,
 						   y_train: np.ndarray,
-						   X_test: np.ndarray,
-						   y_test: np.ndarray,
+						   X_test: Optional[np.ndarray],
+						   y_test: Optional[np.ndarray],
 						   params_xgb: Mapping[str, Union[str, int, float]],
 						   cancer_types: List[str]) -> Tuple[XGBClassifier, np.ndarray, Mapping[str, Union[str, int, float]]]:
 	"""
@@ -184,14 +189,14 @@ def fit_and_evaluate_model(X_train: np.ndarray,
 	Args:
 		X_train: training data
 		y_train: training labels
-		X_test: test data
-		y_test: test labels
+		X_test: test data; optional
+		y_test: test labels; optional
 		params_xgb: XGBoost parameters
 		cancer_types: list of cancer types
 	Returns:
 		xg_clf: XGBoost model
-		pred_probs_on_test: Predicted probabilities on test data
-		performance_report: classification report
+		pred_probs_on_test: predicted probabilities on test data
+		performance_report: performance report
 	"""
 	xg_clf = XGBClassifier(
 		tree_method='hist', 
@@ -202,9 +207,12 @@ def fit_and_evaluate_model(X_train: np.ndarray,
 		verbosity=0
 	)
 	xg_clf.fit(X_train, y_train, verbose=False)
-	pred_probs_on_test = xg_clf.predict_proba(X_test)
-	performance_report = classification_report(y_test, xg_clf.predict(X_test), target_names=cancer_types, output_dict=True)
-	return xg_clf, pred_probs_on_test, performance_report
+	if X_test is not None and y_test is not None:
+		pred_probs_on_test = xg_clf.predict_proba(X_test)
+		performance_report = classification_report(y_test, xg_clf.predict(X_test), target_names=cancer_types, output_dict=True)
+		return xg_clf, pred_probs_on_test, performance_report
+	else:
+		return xg_clf
 
 def perform_k_fold(data: pd.DataFrame,
 				   labels: pd.DataFrame,
@@ -297,3 +305,4 @@ def perform_k_fold(data: pd.DataFrame,
 		else:
 			pred_probs_on_val_total_df = pd.concat([pred_probs_on_val_total_df, pred_probs_on_val_df])
 	return k_fold_to_performance_report_dict, pred_probs_on_val_total_df
+	

@@ -10,15 +10,16 @@
 library(deconstructSigs)
 
 # Set the data source variable
-data_source <- "DFCI"  # Change this to either "DFCI" or "GENIE" based on your data source
+data_source <- "GENIE"  # Change this to either "DFCI" or "GENIE" based on your data source
 
 # Read mutation data based on data source
 if (data_source == "DFCI") {
   setwd("~/Documents/github/onconpc/data/seq_panel_data/dfci/")
   mutationData <- read.csv('profile_mutation_dfci', header = TRUE, sep="\t")
 } else if (data_source == "GENIE") {
-  setwd("~/Documents/github/onconpc/data/seq_panel_data/genie/")
-  mutationData <- read.csv('genie_mutations_MSK_VICC', header = TRUE, sep="\t")
+  mutationData <- read.csv('data_mutations_extended_5.0-public.txt', sep="\t",
+                           comment.char="#", header=TRUE, fill=TRUE)
+  mutationData <- subset(mutationData, Center %in% c('DFCI', 'MSK', 'VICC'))
 }
 
 # Add "chr" prefix to each chromosome name
@@ -54,11 +55,12 @@ sigs.input <- sigs.input[rowSums(sigs.input) >= 1,]
 if (data_source == "DFCI") {
   filename <- "trinucs_dfci_profile.csv" # Modify this as needed
 } else if (data_source == "GENIE") {
-  filename <- "trinucs_genie_msk_vicc.csv"
+  filename <- "trinucs_genie.csv"
 }
 # Save the output
 write.csv(sigs.input, file = filename)
 
+# ===================== [OPTIONAL] =====================
 # Visualization of trinucs
 trinucs_selected <- sigs.input
 results <- vector("list", nrow(trinucs_selected))

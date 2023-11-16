@@ -1,11 +1,17 @@
-from adjustText import adjust_text
+from typing import List, Mapping, Optional
 import collections
-import shap
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import shap
 import xgboost as xgb
-from typing import List, Mapping, Optional
+from adjustText import adjust_text
+
+"""
+Author: Intae Moon
+This script contains utility functions for predictions and interpretations.
+"""
 
 def get_xgboost_cancer_type_preds(xgb_model: xgb.sklearn.XGBClassifier,
 								  features_test_df: pd.DataFrame,
@@ -30,6 +36,33 @@ def get_xgboost_cancer_type_preds(xgb_model: xgb.sklearn.XGBClassifier,
 	ckp_test_preds_df['cancer_type'] = [cancer_types[max_idx] for max_idx in ckp_test_preds]
 	return ckp_test_preds_df
 
+def get_xgboost_latest_cancer_type_preds(xgb_model: xgb.core.Booster,
+										 features_test_df: pd.DataFrame,
+										 cancer_types: List[str]) -> pd.DataFrame:
+	"""Returns cancer type predictions for test set using XGBoost model.
+	
+	Args:
+		xgb_model: XGBoost model.
+		features_test_df: Test set features.
+		cancer_types: List of cancer types.
+	Returns:
+		pd.DataFrame containing cancer type predictions and prediction probabilities.
+	"""
+	dtest = xgb.DMatrix(features_test_df.values)
+	ckp_test_pred_probs = xgb_model.predict(dtest, output_margin=True)
+
+	ckp_test_pred_probs = np.exp(ckp_test_pred_probs)
+	ckp_test_pred_probs /= ckp_test_pred_probs.sum(axis=1, keepdims=True)
+	ckp_test_preds = ckp_test_pred_probs.argmax(axis=1)
+	max_posteriors = [pred_dist[max_idx] for pred_dist, max_idx in
+					  zip(ckp_test_pred_probs, ckp_test_preds)]
+	ckp_test_preds_df = pd.DataFrame(ckp_test_pred_probs,
+									 index=features_test_df.index,
+									 columns=cancer_types)
+	ckp_test_preds_df['max_posterior'] = max_posteriors
+	ckp_test_preds_df['cancer_type'] = [cancer_types[max_idx] for max_idx in ckp_test_preds]
+	return ckp_test_preds_df
+
 def obtain_shap_values(model: xgb.sklearn.XGBClassifier,
 					   data: pd.DataFrame) -> np.ndarray:
 	"""Returns SHAP values for predictions based on data.
@@ -40,7 +73,6 @@ def obtain_shap_values(model: xgb.sklearn.XGBClassifier,
 	Returns:
 		Numpy array containing SHAP values.
 	"""
-	new_column_names = []
 	# Get SHAP values using the model in byte array.
 	mybooster = model.get_booster()
 	model_bytearray = mybooster.save_raw()[4:]
@@ -48,6 +80,20 @@ def obtain_shap_values(model: xgb.sklearn.XGBClassifier,
 		return model_bytearray
 	mybooster.save_raw = in_bytearray
 	shap_ex = shap.TreeExplainer(mybooster)
+	return shap_ex.shap_values(data)
+
+def obtain_shap_values_with_latest_xgboost(model: xgb.core.Booster,
+										   data: pd.DataFrame) -> np.ndarray:
+	"""Returns SHAP values for predictions based on data.
+	
+	Args:
+		model: XGBoost model.
+		data: Data to obtain SHAP values for.
+	Returns:
+		Numpy array containing SHAP values.
+	"""
+	# Directly use the Booster with the TreeExplainer
+	shap_ex = shap.TreeExplainer(model)
 	return shap_ex.shap_values(data)
 
 def partiton_feature_names_by_group(fature_names: List[str]):
