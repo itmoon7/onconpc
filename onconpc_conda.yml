@@ -1,0 +1,17 @@
+name: onconpc_conda_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9.18
+  - pandas=2.1.3
+  - numpy=1.26.0
+  - matplotlib=3.8.1
+  - xgboost=1.7.6
+  - shap=0.43.0
+  - scikit-learn=1.3.2
+  - pip
+  - pip:
+      - adjustText==0.8
+  - glob2=0.7
+  - absl-py=2.0.0

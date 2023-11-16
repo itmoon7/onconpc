@@ -266,7 +266,7 @@ def load_genie_data(filepath: str,
 							comment='#', low_memory=False)
 	df_cna = pd.read_csv(os.path.join(filepath, "genie/data_CNA_5.0-public.txt"), sep='\t', comment='#')
 	df_cna = df_cna.set_index('Hugo_Symbol').T.rename(columns={'Hugo_Symbol': 'Tumor_Sample_Barcode'})
-	
+	# Use codes/deconstructSigs_trinucs_data.R to obtain tri-nucleotide context features.
 	df_trinuc_feats = pd.read_csv(os.path.join(filepath, "genie/trinucs_genie.csv"), sep=',').set_index('Unnamed: 0')
 	return df_patients, df_mutations, df_cna, df_trinuc_feats
 
@@ -288,7 +288,7 @@ def load_dfci_data(filepath: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 	df_mutations['UNIQUE_SAMPLE_ID'] = [float(idx[:-3]) for idx in df_mutations.UNIQUE_SAMPLE_ID.values]
 
 	df_cna = pd.read_csv(os.path.join(filepath, "dfci/profile_cnv"), sep='\t', comment='#').set_index('Unnamed: 0')
-
+	# Use codes/deconstructSigs_trinucs_data.R to obtain tri-nucleotide context features.
 	df_trinuc_feats = pd.read_csv(os.path.join(filepath, "dfci/trinucs_dfci_profile.csv"), comment='#').set_index('Unnamed: 0')
 	df_trinuc_feats.index = [float(idx[:-3]) for idx in df_trinuc_feats.index]
 
@@ -406,7 +406,7 @@ def main(argv):
 																		df_genie_patients_final,
 																		cancer_types_final)
 	if config in ['profile_dfci', 'both']:
-		# Process patient data based on cancer types to include.
+		# Process patient data based on cancer types to include.	
 		df_dfci_samples_final = process_patient_data(df_samples_dfci, cancers_to_include_dic, cancer_type_column='PRIMARY_CANCER_DIAGNOSIS')
 		if config == 'profile_dfci':
 			# Get final cancer types

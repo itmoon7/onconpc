@@ -8,37 +8,39 @@ import os
 import numpy as np
 
 """
-Intae Moon
-Sep 10, 2023
-
+Author: Intae Moon
 In this script, we train and evaluate the performance of the XGBoost model on the OncoTree-based cancer types.
 One can choose to use k-fold cross validation or train on the entire dataset and test on the held out set.
 """
 
+flags.DEFINE_string('config', None, 'Cancer centers to incorporate for feature processing (genie, profile_dfci, or both)')
 flags.DEFINE_integer('k_fold', 10, 'Number of folds in k-fold cross-validation')
 flags.DEFINE_boolean('use_held_out_set', False, 'Whether to use a held-out set')
 flags.DEFINE_boolean('filter_out_non_informatives', False, 'Whether to filter out non-informative features and samples')
 flags.DEFINE_string('save_model_name', None, 'Name of the model to save')
 flags.DEFINE_string('index_profile_samples_by', 'SAMPLE_ACCESSION_NBR', 'Index profile samples by DFCI_MRN or SAMPLE_ACCESSION_NBR')
-DATA_PATH = '../data/internal_training_data/'
-
+# DATA_PATH = '../data/internal_training_data/'
+DATA_PATH = '../data/'
 
 def main(argv=None):
 	# Custom check for flags that you still require to be non-default
 	FLAGS = flags.FLAGS
-	if FLAGS.save_model_name is None:
-		raise ValueError("Required flag not provided: --save_model_name. Use --helpfull to see help on flags.")
 	# Training configs:
+	config = FLAGS.config
 	k_fold = FLAGS.k_fold
 	use_held_out_set = FLAGS.use_held_out_set
 	save_model_name = FLAGS.save_model_name
 	index_profile_samples_by = FLAGS.index_profile_samples_by
 	filter_out_non_informatives = FLAGS.filter_out_non_informatives
-
+	if config not in ['genie', 'profile_dfci', 'both']:
+		raise ValueError("config must be one of genie, profile_dfci, or both")
+	if config == 'genie' and use_held_out_set == True:
+		raise ValueError("Cannot use held out set when training on genie data only")
 	# load xgb parameters
 	hyperparam_xgb = pd.read_csv(os.path.join(DATA_PATH, 'xgb_hyperparams'), sep = '\t')  #xgb_params_to_run # params_w_results_Mar_1st
 	hyperparam_xgb.drop(columns = 'Unnamed: 0', inplace = True)
-	# Get the best performing hyperparameters
+	# Get the best performing hyperparameters from the previous experiments
+	# this can be extended to try multiple hyperparameters
 	params_xgb = hyperparam_xgb.iloc[0:1]
 
 	# ====================================================================================================
@@ -46,70 +48,82 @@ def main(argv=None):
 	# ====================================================================================================
 	# Load trainable data and labels
 	# Tab separated feature data for CKPs
-	feature_data_name = os.path.join(DATA_PATH, 'features_combined_onco_tree_based_dev')  # features_combined_onco_tree_based_dev, features_combined_default
+	feature_data_name = os.path.join(DATA_PATH, 'features_dfci_test_v2')  # features_combined_onco_tree_based_dev, features_combined_default
 	# Tab separated label data for CKPs
-	label_data_name = os.path.join(DATA_PATH, 'labels_combined_onco_tree_based_dev')  # labels_combined_onco_tree_based_dev, labels_combined_default
-	# Tab separated feature data for CUPs
-	feature_data_name_cup = os.path.join(DATA_PATH, 'features_combined_cup_onco_tree_based_dev')  # features_combined_cup_onco_tree_based_dev, features_combined_cup_default
-	
+	label_data_name = os.path.join(DATA_PATH, 'labels_dfci_test_v2')  # labels_combined_onco_tree_based_dev, labels_combined_default
+	if config in ['profile_dfci', 'both']:
+		# Tab separated feature data for CUPs
+		feature_data_name_cup = os.path.join(DATA_PATH, 'features_dfci_cup_test_v2')  # features_combined_cup_onco_tree_based_dev, features_combined_cup_default
+		features_cup_df = pd.read_csv(feature_data_name_cup, sep = '\t')
+		features_cup_df.set_index('Unnamed: 0', inplace = True)
 	features_ckp_df = pd.read_csv(feature_data_name, sep = '\t')
 	features_ckp_df.set_index(features_ckp_df.columns[0], inplace = True)
 	labels_ckp_df = pd.read_csv(label_data_name, sep = '\t')
 	labels_ckp_df.set_index(labels_ckp_df.columns[0], inplace = True)
-	features_cup_df = pd.read_csv(feature_data_name_cup, sep = '\t')
-	features_cup_df.set_index('Unnamed: 0', inplace = True)
 
-	if index_profile_samples_by == 'DFCI_MRN':
-		# Load ../data/internal_training_data/onconpc_sample_id_to_dfci_mrn.pkl
-		with open(os.path.join(DATA_PATH, 'onconpc_sample_id_to_dfci_mrn.pkl'), "rb") as fp:   # Unpickling
-			onconpc_sample_id_to_dfci_mrn = pickle.load(fp)
-		# index CKP data by DFCI_MRN
-		features_ckp_df.index = utils_training.get_new_indices(features_ckp_df.index, onconpc_sample_id_to_dfci_mrn)
-		labels_ckp_df.index = utils_training.get_new_indices(labels_ckp_df.index, onconpc_sample_id_to_dfci_mrn)
-		features_cup_df.index = utils_training.get_new_indices(features_cup_df.index, onconpc_sample_id_to_dfci_mrn)
-		# Set index name
-		features_ckp_df.index.name = 'DFCI_MRN_FOR_PROFILE'
-		labels_ckp_df.index.name = 'DFCI_MRN_FOR_PROFILE'
-		features_cup_df.index.name = 'DFCI_MRN_FOR_PROFILE'
-	elif index_profile_samples_by == 'SAMPLE_ACCESSION_NBR':
-		# Load ../data/internal_training_data/onconpc_sample_id_to_sample_accession_nbr.pkl
-		with open(os.path.join(DATA_PATH, 'onconpc_sample_id_to_sample_accession_nbr.pkl'), "rb") as fp:   # Unpickling
-			onconpc_sample_id_to_sample_accession_nbr = pickle.load(fp)
-		# index CKP data by SAMPLE_ACCESSION_NBR
-		features_ckp_df.index = utils_training.get_new_indices(features_ckp_df.index, onconpc_sample_id_to_sample_accession_nbr)
-		labels_ckp_df.index = utils_training.get_new_indices(labels_ckp_df.index, onconpc_sample_id_to_sample_accession_nbr)
-		features_cup_df.index = utils_training.get_new_indices(features_cup_df.index, onconpc_sample_id_to_sample_accession_nbr)
-		# Set index name
-		features_ckp_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
-		labels_ckp_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
-		features_cup_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
-	if use_held_out_set:
-		heldout_ckps_preds_df = pd.read_csv(os.path.join(DATA_PATH, 'heldout_ckps_preds_onco_tree_based_dev'), sep = '\t')
-		heldout_ckps_preds_df.set_index(heldout_ckps_preds_df.columns[0], inplace = True)
-		held_out_indices = utils_training.get_new_indices([idx[:-3] for idx in heldout_ckps_preds_df.index],
-													onconpc_sample_id_to_sample_accession_nbr)
-		# Exclude held out samples from training
-		indices_to_choose = set(features_ckp_df.index) - set(held_out_indices)
-		features_ckp_df = features_ckp_df.loc[indices_to_choose]
-		labels_ckp_df = labels_ckp_df.loc[indices_to_choose]
+	if config in ['profile_dfci', 'both']:
+		if index_profile_samples_by == 'DFCI_MRN':
+			# Load ../data/internal_training_data/onconpc_sample_id_to_dfci_mrn.pkl
+			with open(os.path.join(DATA_PATH, 'onconpc_sample_id_to_dfci_mrn.pkl'), "rb") as fp:   # Unpickling
+				onconpc_sample_id_to_dfci_mrn = pickle.load(fp)
+			# index CKP data by DFCI_MRN
+			features_ckp_df.index = utils_training.get_new_indices(features_ckp_df.index, onconpc_sample_id_to_dfci_mrn)
+			labels_ckp_df.index = utils_training.get_new_indices(labels_ckp_df.index, onconpc_sample_id_to_dfci_mrn)
+			features_cup_df.index = utils_training.get_new_indices(features_cup_df.index, onconpc_sample_id_to_dfci_mrn)
+			# Set index name
+			features_ckp_df.index.name = 'DFCI_MRN_FOR_PROFILE'
+			labels_ckp_df.index.name = 'DFCI_MRN_FOR_PROFILE'
+			features_cup_df.index.name = 'DFCI_MRN_FOR_PROFILE'
+		elif index_profile_samples_by == 'SAMPLE_ACCESSION_NBR':
+			# Load ../data/internal_training_data/onconpc_sample_id_to_sample_accession_nbr.pkl
+			with open(os.path.join(DATA_PATH, 'onconpc_sample_id_to_sample_accession_nbr.pkl'), "rb") as fp:   # Unpickling
+				onconpc_sample_id_to_sample_accession_nbr = pickle.load(fp)
+			# index CKP data by SAMPLE_ACCESSION_NBR
+			features_ckp_df.index = utils_training.get_new_indices(features_ckp_df.index, onconpc_sample_id_to_sample_accession_nbr)
+			labels_ckp_df.index = utils_training.get_new_indices(labels_ckp_df.index, onconpc_sample_id_to_sample_accession_nbr)
+			features_cup_df.index = utils_training.get_new_indices(features_cup_df.index, onconpc_sample_id_to_sample_accession_nbr)
+			# Set index name
+			features_ckp_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
+			labels_ckp_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
+			features_cup_df.index.name = 'SAMPLE_ACCESSION_NBR_FOR_PROFILE'
+
+		if use_held_out_set:
+			heldout_ckps_preds_df = pd.read_csv(os.path.join(DATA_PATH, 'heldout_ckps_preds_onco_tree_based_dev'), sep = '\t')
+			heldout_ckps_preds_df.set_index(heldout_ckps_preds_df.columns[0], inplace = True)
+			held_out_indices = utils_training.get_new_indices([idx[:-3] for idx in heldout_ckps_preds_df.index],
+														onconpc_sample_id_to_sample_accession_nbr)
+			# Exclude held out samples from training
+			indices_to_choose = set(features_ckp_df.index) - set(held_out_indices)
+			features_ckp_df = features_ckp_df.loc[indices_to_choose]
+			labels_ckp_df = labels_ckp_df.loc[indices_to_choose]
 	
 	# Standardize feature names
 	new_feat_names = utils_training.standardize_feat_names(list(features_ckp_df.columns))
 	features_ckp_df.columns = new_feat_names
-	features_cup_df.columns = new_feat_names
+	if config in ['profile_dfci', 'both']:
+		features_cup_df.columns = new_feat_names
 	feature_group_to_features_dict = utils.partiton_feature_names_by_group(new_feat_names)
 
 	if filter_out_non_informatives:
-		(features_ckp_final_df,
-	labels_ckp_final_df,
-	features_cup_final_df) = utils_training.filter_out_low_freq_feats_and_samples(features_ckp_df,
-																					labels_ckp_df,
-																					features_cup_df, 
-																					feature_group_to_features_dict)
+		if config in ['profile_dfci', 'both']:
+			(features_ckp_final_df,
+		labels_ckp_final_df,
+		features_cup_final_df) = utils_training.filter_out_low_freq_feats_and_samples(features_ckp_df,
+																						labels_ckp_df,
+																						features_cup_df, 
+																						feature_group_to_features_dict)
+		else:
+			(features_ckp_final_df,
+		labels_ckp_final_df,
+		_) = utils_training.filter_out_low_freq_feats_and_samples(features_ckp_df,
+															labels_ckp_df,
+															features_ckp_df, # placeholder for cup_df
+															feature_group_to_features_dict)
 	else:
 		features_ckp_final_df = features_ckp_df
 		labels_ckp_final_df = labels_ckp_df
-		features_cup_final_df = features_cup_df
+		if config in ['profile_dfci', 'both']:
+			features_cup_final_df = features_cup_df
 
 	# ====================================================================================================
 	# Model Training and Evaluation
@@ -123,20 +137,38 @@ def main(argv=None):
 	else:
 		print('\n')
 		print('Duplicate indices detected (most likely due to DFCI_MRN indexing)')
-	
-	(k_fold_to_performance_report_dict,
-  pred_probs_on_val_total_df) = utils_training.perform_k_fold(features_ckp_final_df,
-															  labels_ckp_final_df,
-															  cancer_types,
-															  params_xgb,
-															  k_fold=k_fold,
-															  save_model_name=save_model_name)
-	# Store k_fold_to_performance_report_dict and pred_probs_on_val_total_df
-	with open(os.path.join(DATA_PATH, f'k_fold_to_performance_report_dict_{save_model_name}.pkl'), 'wb') as f:
-		pickle.dump(k_fold_to_performance_report_dict, f)
-	pred_probs_on_val_total_df.to_csv(os.path.join(DATA_PATH, f'pred_probs_on_val_total_df_{save_model_name}.csv'))
+	if k_fold > 0:
+		(k_fold_to_performance_report_dict,
+	pred_probs_on_val_total_df) = utils_training.perform_k_fold(features_ckp_final_df,
+																labels_ckp_final_df,
+																cancer_types,
+																params_xgb,
+																k_fold=k_fold,
+																save_model_name=save_model_name)
+		# Store k_fold_to_performance_report_dict and pred_probs_on_val_total_df
+		with open(os.path.join(DATA_PATH, f'k_fold_to_performance_report_dict_{save_model_name}.pkl'), 'wb') as f:
+			pickle.dump(k_fold_to_performance_report_dict, f)
+		pred_probs_on_val_total_df.to_csv(os.path.join(DATA_PATH, f'pred_probs_on_val_total_df_{save_model_name}.csv'))
+	else:
+		X_train = features_ckp_final_df.copy()
+		y_train = labels_ckp_final_df.loc[X_train.index]['cancer_label']
+		# Standardize Age based on train data
+		age_mean = X_train['Age'].mean()
+		age_std = X_train['Age'].std()
+		X_train['Age'] = (X_train['Age'] - age_mean) / age_std
+		xg_clf = utils_training.fit_and_evaluate_model(X_train.values,
+												 y_train.values,
+												 None,
+												 None,
+												 params_xgb,
+												 cancer_types)
+		# Evaluate the model performance based on different maximum prediction probability cut-offs.
+		if save_model_name is not None:
+			if not os.path.exists('../models'):
+				os.makedirs('../models/models')
+			xg_clf.save_model(f'../models/xgboost_{save_model_name}_trained_on_all_ckps.json')
 	return 
 
 if __name__ == '__main__':
-	flags.mark_flags_as_required(['k_fold', 'use_held_out_set', 'save_model_name'])
+	flags.mark_flags_as_required(['k_fold', 'config', 'use_held_out_set', 'save_model_name'])
 	app.run(main)
