@@ -4,6 +4,14 @@ We developed **OncoNPC** (**Onco**logy **N**GS-based **P**rimary cancer type **C
 
 To ensure consistent execution of the code, we recommend using the conda environment specified in `onconpc_conda.yml`. This file contains all the necessary dependencies with their specific versions.
 
+## Table of Contents
+- [Setting up the Conda Environment](#setting-up-the-conda-environment)
+- [Utilizing Public Tumor Sequencing Data from AACR GENIE](#utilizing-public-tumor-sequencing-data-from-aacr-genie)
+- [Training and Validating the XGBoost-based OncoNPC Model](#training-and-validating-the-xgboost-based-onconpc-model)
+- [Notebook Examples for Predicting Cancer Type and Visualizing Prediction Explanation](#notebook-examples-for-predicting-cancer-type-and-visualizing-prediction-explanation)
+- [Link to Manuscript](#link-to-manuscript)
+- [Citation](#citation)
+
 ## Setting up the Conda Environment
 
 ### 1. Install Conda
@@ -131,7 +139,7 @@ The [Direct Data Loading and OncoNPC Prediction notebook](https://github.com/itm
 
 This notebook is designed to simplify the process for users who want to apply the OncoNPC model directly to raw datasets.
 
-## Additional Resources
+## Link to Manuscript
 
 - [Manuscript](https://rdcu.be/drq1a)
 
