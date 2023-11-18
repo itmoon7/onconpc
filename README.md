@@ -10,7 +10,6 @@ To ensure consistent execution of the code, we recommend using the conda environ
 - [Training and Validating the XGBoost-based OncoNPC Model](#training-and-validating-the-xgboost-based-onconpc-model)
 - [Notebook Examples for Predicting Cancer Type and Visualizing Prediction Explanation](#notebook-examples-for-predicting-cancer-type-and-visualizing-prediction-explanation)
 - [Link to Manuscript](#link-to-manuscript)
-- [Citation](#citation)
 
 ## Setting up the Conda Environment
 
@@ -143,7 +142,7 @@ This notebook is designed to simplify the process for users who want to apply th
 
 - [Manuscript](https://rdcu.be/drq1a)
 
-## Citation
+### Citation
 
 ```
 @article{moon2023machine,
