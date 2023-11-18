@@ -6,27 +6,45 @@ To ensure consistent execution of the code, we recommend using the conda environ
 
 ## Setting up the Conda Environment
 
-1. **Install Conda**: If you do not have Conda installed, please install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution).
+### 1. Install Conda
+If you do not have Conda installed, please install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution).
 
-2. **Clone the Repository**: 
-   ```bash
-   git clone https://github.com/your-github-username/onconpc.git
-   cd onconpc
-   ```
+### 2. Clone the Repository
+```bash
+git clone https://github.com/your-github-username/onconpc.git
+cd onconpc
+```
 
-3. **Create Conda Environment**: Use the `onconpc_conda.yml` file to create a conda environment.
-   ```bash
-   conda env create -f onconpc_conda.yml
-   ```
+### 3. Create Conda Environment
+Use the `onconpc_conda.yml` file to create a Conda environment.
+```bash
+conda env create -f onconpc_conda.yml
+```
 
-4. **Activate the Environment**: Once the environment is created, you can activate it using:
-   ```bash
-   conda activate onconpc_conda_env
-   ```
-
-5. **Running the Code**: With the environment activated, you can now run the code within this repository.
+### 4. Activate the Environment
+Once the environment is created, you can activate it using:
+```bash
+conda activate onconpc_conda_env
+```
 
 For further details on the software and package versions, please refer to the `onconpc_conda.yml` file.
+After setting up the Conda environment and installing the necessary Python packages, you will also need to install R packages crucial for processing mutation data and generating features for the OncoNPC model.
+
+The script `install_r_packages_onconpc.sh` is provided in the main repository for installing these R packages.
+
+### 5. Making the Script Executable
+Before running the script, you need to make it executable. In the root directory of the project, run:
+```bash
+chmod +x install_r_packages_onconpc.sh
+```
+
+### 6. Running the Script
+Execute the script to install the necessary R packages:
+```bash
+./install_r_packages_onconpc.sh
+```
+
+This script will handle the installation of R packages required for the analysis, including the setup for SNV in tri-nucleotide context and mutation signature features using the `deconstructSigs` R library. With the environment activated, you can now run the code within this repository.
 
 ## Utilizing Public Tumor Sequencing Data from AACR GENIE
 
@@ -48,7 +66,6 @@ For integrating AACR GENIE data with OncoNPC, you will need:
 1. **Accessing AACR GENIE Data**: Begin by obtaining the AACR GENIE data as described in their [Data Guide](https://www.aacr.org/wp-content/uploads/2023/09/14.0-data_guide.pdf).
 
 2. **Preparing Mutataion Signature features**: 
-   - Execute `codes/deconstructSigs_trinucs_data.R` with `data_mutations_extended.txt`. This step is crucial for processing SNVs in tri-nucleotide contexts, essential for prepraring mutation signature features.
    - The pre-processing code then uses weight matrices from the [COSMIC Sanger Signatures](https://cancer.sanger.ac.uk/signatures/sbs/) to generate continuous values for mutation signatures.
 
 3. **Setting up Data Directories**: In the `load_genie_data()` of `process_features.py` script, specify directories for the AACR GENIE data files.
@@ -63,9 +80,19 @@ For integrating AACR GENIE data with OncoNPC, you will need:
 
 ## Training and Validating the XGBoost-based OncoNPC Model
 
-After processing features with `process_features.py`, you can train and validate the OncoNPC model:
+After processing features with `process_features.py`, you can train and validate the OncoNPC model. To do this, follow these steps:
 
-1. **Specify Data Locations**: In `train_evaluate_onconpc.py`, set the locations of the processed features.
+1. **Specify Data Locations in `train_evaluate_onconpc.py`**:
+   - Open the `train_evaluate_onconpc.py` file.
+   - Set the locations of the processed feature and label data. This can be done around lines 50-53. You will need to specify the file paths for both the features and labels. For example:
+     ```python
+     # Tab separated feature data for CKPs
+     feature_data_name = os.path.join(DATA_PATH, 'features_genie_')  # Replace with your feature file path
+     # Tab separated label data for CKPs
+     label_data_name = os.path.join(DATA_PATH, 'labels_genie_')  # Replace with your label file path
+     ```
+   - Ensure that `DATA_PATH` is correctly defined to point to the directory where your processed data files are located.
+   - Replace `'features_genie_'` and `'labels_genie_'` with the names of your actual processed feature and label files.
 
 2. **Training and Validation**: Use the following command for model training and validation:
    ```bash
@@ -80,22 +107,33 @@ After processing features with `process_features.py`, you can train and validate
 
 Adapting the OncoNPC model to AACR GENIE data may result in variations in performance or results due to differences in data sources from the original DFCI training set.
 
+## Notebook Examples for Predicting Cancer Type and Visualizing Prediction Explanation
 
-## Notebook Example for Predicting Cancer Type and Visualizaing Prediction Explanation.
+### 1. OncoNPC Model Application for CUP Tumors
+The [OncoNPC Prediction and Explanation for CUP Tumors notebook](https://github.com/itmoon7/onconpc/blob/main/onconpc_prediction_and_explanation_for_cup_tumors.ipynb) in this repository provides a practical application of the OncoNPC model. Key highlights include:
 
-The [notebook example](https://github.com/itmoon7/onconpc/blob/main/onconpc_prediction_and_explanation_for_cup_tumors.ipynb) in this repository illustrates the practical application of the OncoNPC model. It includes:
+   - **Cancer Type Prediction for CUP Tumors**: Demonstrates using the trained OncoNPC model to predict the primary cancer type of CUP tumors based on molecular data.
 
-1. **Cancer Type Prediction for CUP Tumors**: Using the trained OncoNPC model, the notebook demonstrates how to predict the primary cancer type of Cancers of Unknown Primary (CUP) based on molecular data.
+   - **Feature Visualization**: Showcases how to visualize important features contributing to each cancer type prediction using SHAP (SHapley Additive exPlanations) values.
 
-2. **Feature Visualization**: It showcases how to visualize the most important features contributing to each cancer type prediction. This is achieved through the calculation and plotting of SHAP (SHapley Additive exPlanations) values.
+   - **Detailed Case Study**: Presents a specific case to illustrate the model's cancer type predictions and how SHAP values offer insights.
 
-3. **Detailed Case Study**: A specific case may be presented to demonstrate how the model predicts the cancer type and how SHAP values provide insights into the prediction.
+This notebook is a resource for researchers and clinicians to understand the model's predictions and the key features influencing these predictions in cancer genomics.
 
-This notebook serves as a guide for researchers and clinicians to understand the model's predictions and the key features influencing these predictions in the context of cancer genomics.
+### 2. Direct Data Loading and OncoNPC Prediction
+The [Direct Data Loading and OncoNPC Prediction notebook](https://github.com/itmoon7/onconpc/blob/main/onconpc_prediction_and_explanation_for_cup_tumors_from_cbio_raw.ipynb) adds functionality for:
+
+   - **Loading Raw Data**: Utilizes raw cBioPortal-like or GENIE AACR public data, streamlining the process of data preparation.
+
+   - **Automated Cancer Type Prediction**: Integrates a function to automatically predict cancer types using the OncoNPC model.
+
+   - **Visualization of Prediction Explanation**: Visualizing the prediction explanation, offering clarity on how the model arrives at its conclusions for each tumor sample.
+
+This notebook is designed to simplify the process for users who want to apply the OncoNPC model directly to raw datasets.
 
 ## Additional Resources
 
-- [Manuscript](https://www.nature.com/articles/s41591-023-02482-6)
+- [Manuscript](https://rdcu.be/drq1a)
 
 ## Citation
 
