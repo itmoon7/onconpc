@@ -1,0 +1,4 @@
+PATIENT_ID	SAMPLE_ID	AGE_AT_SEQ_REPORT	ONCOTREE_CODE	SAMPLE_TYPE	SEQ_ASSAY_ID	CANCER_TYPE	CANCER_TYPE_DETAILED	SAMPLE_TYPE_DETAILED
+GENIE-P-001	GENIE-S-001	56	PAAD	Metastasis	MSK-IMPACT468	Pancreatic Cancer	Pancreatic Adenocarcinoma	Metastasis site unspecified
+GENIE-P-002	GENIE-S-002	71	LUAD	Primary	MSK-IMPACT468	Non-Small Cell Lung Cancer	Lung Adenocarcinoma	Primary tumor
+GENIE-P-003	GENIE-S-003	64	UCU	Primary	MSK-IMPACT468	Bladder Cancer	Urethral Urothelial Carcinoma	Primary tumor

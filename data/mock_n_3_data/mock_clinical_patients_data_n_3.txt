@@ -1,0 +1,4 @@
+PATIENT_ID	SEX	PRIMARY_RACE	ETHNICITY	CENTER
+GENIE-P-001	Male	White	Non-Spanish/non-Hispanic	MSK
+GENIE-P-002	Male	White	Non-Spanish/non-Hispanic	MSK
+GENIE-P-003	Male	White	Non-Spanish/non-Hispanic	MSK
