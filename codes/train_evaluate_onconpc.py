@@ -48,12 +48,12 @@ def main(argv=None):
 	# ====================================================================================================
 	# Load trainable data and labels
 	# Tab separated feature data for CKPs
-	feature_data_name = os.path.join(DATA_PATH, 'features_dfci_test_v2')  # features_combined_onco_tree_based_dev, features_combined_default
+	feature_data_name = os.path.join(DATA_PATH, 'features_genie_') # Replace with your feature file path
 	# Tab separated label data for CKPs
-	label_data_name = os.path.join(DATA_PATH, 'labels_dfci_test_v2')  # labels_combined_onco_tree_based_dev, labels_combined_default
+	label_data_name = os.path.join(DATA_PATH, 'labels_genie_')  # Replace with your label file path
 	if config in ['profile_dfci', 'both']:
 		# Tab separated feature data for CUPs
-		feature_data_name_cup = os.path.join(DATA_PATH, 'features_dfci_cup_test_v2')  # features_combined_cup_onco_tree_based_dev, features_combined_cup_default
+		feature_data_name_cup = os.path.join(DATA_PATH, 'features_combined_cup_onco_tree_based_dev')
 		features_cup_df = pd.read_csv(feature_data_name_cup, sep = '\t')
 		features_cup_df.set_index('Unnamed: 0', inplace = True)
 	features_ckp_df = pd.read_csv(feature_data_name, sep = '\t')
@@ -96,14 +96,7 @@ def main(argv=None):
 			indices_to_choose = set(features_ckp_df.index) - set(held_out_indices)
 			features_ckp_df = features_ckp_df.loc[indices_to_choose]
 			labels_ckp_df = labels_ckp_df.loc[indices_to_choose]
-	
-	# Standardize feature names
-	new_feat_names = utils_training.standardize_feat_names(list(features_ckp_df.columns))
-	features_ckp_df.columns = new_feat_names
-	if config in ['profile_dfci', 'both']:
-		features_cup_df.columns = new_feat_names
-	feature_group_to_features_dict = utils.partiton_feature_names_by_group(new_feat_names)
-
+	feature_group_to_features_dict = utils.partition_feature_names_by_group(list(features_ckp_df.columns))
 	if filter_out_non_informatives:
 		if config in ['profile_dfci', 'both']:
 			(features_ckp_final_df,
