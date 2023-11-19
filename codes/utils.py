@@ -258,15 +258,15 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 	ax[1].spines['top'].set_visible(False)
 
 	fig.tight_layout()
-	plt.show()
 	# Store image as a pdf
 	if save_plot:
 		full_filename = os.path.join(filepath, filename + '.pdf')
 		plt.savefig(full_filename,
 			  bbox_inches='tight')
+		plt.show()
 		print(f'Explanation plot saved at {full_filename}')
 		return full_filename
-	
+	plt.show()
 
 def get_onconpc_prediction_explanations(query_ids: List[str], 
 										preds_df: pd.DataFrame, 
