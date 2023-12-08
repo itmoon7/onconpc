@@ -320,13 +320,14 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 		# Information and plot generation
 		sample_info = f'SAMPLE_ID: {query_id}\nPrediction: {pred_cancer}\nPrediction probability: {pred_prob:.3f}'
 		feature_group_to_features_dict = partition_feature_names_by_group(df_features_genie.columns)
+		top_n_predictions = None if not top_three_preds else top_n_predictions_dict[query_id]
 		full_filename = get_individual_pred_interpretation(shap_pred_sample_df,
 													 feature_sample_df,
 													 feature_group_to_features_dict,
 													 sample_info=sample_info,
 													 filename=str(query_id),
 													 filepath=filepath,
-													 top_n_predictions=top_n_predictions_dict[query_id],
+													 top_n_predictions=top_n_predictions,
 													 save_plot=save_plot)
 		# Store the results
 		results_dict[query_id] = {
