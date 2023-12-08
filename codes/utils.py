@@ -129,6 +129,7 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 									   filename: Optional[str]=None,
 									   filepath: str='others_prediction_explanation',
 									   top_feature_num: int=10,
+									   top_n_predictions: Optional[Mapping[str, float]]=None,
 									   save_plot: bool=False):
 	"""
 	Get individual prediction interpretation for a given tumor sample.
@@ -140,6 +141,8 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 		sample_info: Sample information to be displayed.
 		filename: Filename to save the figure.
 		top_feature_num: Number of top features to display.
+		top_n_predictions_dict: Dictionary containing top N predictions.
+		save_plot: Whether to save the plot.
 	"""
 	# set font size and font family
 	fig, ax = plt.subplots()
@@ -179,6 +182,13 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 	first_ring_width = 0.2
 	mypie, _ = ax[0].pie(shaps_in_feature_groups, radius=1.3, labels=group_names, colors=[a(0.6), b(0.6), c(0.6), d(0.6)] )
 	plt.setp( mypie, width=first_ring_width, edgecolor='white')
+	
+	if top_n_predictions:
+		# plot top n predictions as text in ax[0]
+		top_n_preds_str = '\n'.join([f'{pred}: {prob:.3f}' for pred, prob in top_n_predictions.items()])
+		# place them bottom left of the plot
+		ax[0].text(-1.5, -1.875, 'Top 3 predictions', fontsize=12, ha='center', va='center')
+		ax[0].text(-1.5, -2.25, top_n_preds_str, fontsize=12, ha='center', va='center')
 	 
 	# Configure the inner ring
 	subcolors = []; subgroup_portion = []
@@ -195,7 +205,6 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 				subcolors.append(color_sel(score/group_val*0.6))
 			else:
 				subcolors.append(color_sel(score/group_val))
-
 	subgroup_names_chosen = []
 	top_features = []
 	top_features_orig = []
@@ -274,7 +283,8 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 										df_features_genie: pd.DataFrame, 
 										cancer_types_to_consider: List[str],
 										filepath: str='others_prediction_explanation',
-										save_plot: bool=False
+										save_plot: bool=False,
+										top_three_preds: bool=False,
 										) -> List[Mapping[str, Any]]:
 	"""
 	Get OncoNPC predictions and generate SHAP-based explanation plots for multiple query IDs.
@@ -285,11 +295,14 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 		shaps: Array of SHAP values.
 		df_features_genie: DataFrame containing features.
 		cancer_types_to_consider: List of cancer types considered in the prediction.
-		utils: Utility module with functions for generating plots and other utilities.
-
+		filepath: Path to save the explanation plots.
+		save_plot: Whether to save the explanation plots.
+		top_three_preds: Whether to visualize top three predictions.
 	Returns:
 		List of dictionaries containing prediction details and explanation plots for each query ID.
 	"""
+	if top_three_preds:
+		top_n_predictions_dict = get_top_n_pred(preds_df, cancer_types_to_consider, n=3)
 	results_dict = {}
 	for query_id in query_ids:
 		# Get OncoNPC prediction
@@ -313,6 +326,7 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 													 sample_info=sample_info,
 													 filename=str(query_id),
 													 filepath=filepath,
+													 top_n_predictions=top_n_predictions_dict[query_id],
 													 save_plot=save_plot)
 		# Store the results
 		results_dict[query_id] = {
@@ -707,3 +721,26 @@ def standardize_feat_names(curr_feat_names: List[str]) -> List[str]:
 		else:   
 			new_feat_names.append(feat + ' CNA')
 	return new_feat_names
+
+def get_top_n_pred(df: pd.DataFrame,				
+				   cancer_types: List[str],
+				   n: int=3) -> Mapping[str, Mapping[str, float]]:
+	"""
+	Get top n predictions for each sample in the given DataFrame.
+	Args:
+		df: DataFrame containing predictions.
+		n: Number of top predictions to return.
+		cancer_types: List of cancer types.
+	Returns:
+		Dictionary mapping each sample ID to top n predictions and their corresponding probability values.
+	"""
+	# Drop columns other than cancer types
+	columns_to_drop = [c for c in df.columns if c not in cancer_types]
+	df_chosen = df.drop(columns=columns_to_drop)
+	# Creating a dictionary to map each sample ID to top 3 predictions and their corresponding probability values
+	top_n_predictions_dict = {}
+	for index, row in df_chosen.iterrows():
+		# Getting the top n predictions sorted by their probabilities
+		sorted_top_3 = row.nlargest(n).sort_values(ascending=False)
+		top_n_predictions_dict[index] = sorted_top_3.to_dict()
+	return top_n_predictions_dict
