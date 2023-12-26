@@ -525,13 +525,15 @@ def pre_process_features_genie(df_mutations: pd.DataFrame,
 	df_features_merged = merge_dfs(dfs_list, common_ids)
 	# Exclude age NaN indices.
 	df_features_merged_final = df_features_merged.loc[list(set(df_features_merged.index) - set(age_nan_indices))]
-	df_labels = df_patients_id_indexed.loc[df_features_merged_final.index][cancer_type_column]
+
 	if cancer_types is not None:
+		df_labels = df_patients_id_indexed.loc[df_features_merged_final.index][cancer_type_column]
 		df_labels_final = pd.DataFrame([cancer_types.index(val) for val in df_labels.values],
 									columns = ['cancer_label'], index = df_labels.index)
 		df_labels_final['cancer_type'] = df_labels.values	
 		return df_features_merged_final, df_labels_final
 	else:
+		df_labels = None
 		return df_features_merged_final, df_labels
 
 def pre_process_features_dfci(df_mutations: pd.DataFrame,
