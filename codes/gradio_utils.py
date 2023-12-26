@@ -154,9 +154,12 @@ def parse_inputs(age, gender, CNA_events, mutations):
         mutations = []
 
     # Define mutation columns for DataFrame and create mutation DataFrame
-    mutation_columns = ["UNIQUE_SAMPLE_ID", "CHROMOSOME", "POSITION", "REF_ALLELE", "ALT_ALLELE"]
-    mutation_df = pd.DataFrame(mutations, columns=mutation_columns) if mutations else pd.DataFrame(columns=mutation_columns)
+    mutation_columns = ["UNIQUE_SAMPLE_ID", "HUGO_SYMBOL", "CHROMOSOME", "POSITION", "REF_ALLELE", "ALT_ALLELE"]
+    mutation_full_df = pd.DataFrame(mutations, columns=mutation_columns) if mutations else pd.DataFrame(columns=mutation_columns)
+    mutation_df = mutation_full_df.drop('HUGO_SYMBOL', axis=1, inplace=False)
+    
 
+    print(mutation_df)
     # Save mutation data to a CSV file
     mutation_df.to_csv('./mutation_input.csv', index=False)
 
@@ -408,8 +411,8 @@ def launch_gradio(server_name, server_port):
             with gr.Column():
                 age = gr.Number(label="Age")
                 gender = gr.Radio(choices=["Male", "Female"], label="Gender")
-                cna_events = gr.Textbox(lines=2, placeholder="Enter CNA events...\nex: KCNQ1 2 | BRAF -1 | SLX1B 1 | CBLB -2", label="Genes with CNA Events (comma-separated)")
-                mutations = gr.Textbox(lines=5, placeholder="Enter mutations...\nex: chr17, 7577539, G, A | chr3, 178936091, G, A | chr6, 152419920, T, A", label="MUTATIONS")
+                cna_events = gr.Textbox(lines=7, placeholder="Copy Number Alterations\n\nPlease enter the name of each gene followed by its corresponding CNA level. If you are entering data for multiple genes, separate each gene and its CNA level with a vertical bar '|'.\n\nFor example: RAF1 2 | PPARG 2", label="Genes with CNA Events")
+                mutations = gr.Textbox(lines=7, placeholder="Somatic Mutations\n\nPlease enter the gene name, chromosome number, position of the variant, allele in the reference genome, and alternate allele. If you are entering data for multiple genes, separate each set of information with a vertical bar '|'.\n\nFor example: ERBB2, chr17, 37868208, C, T | CDKN1A, chr6, 36651880, -, GTCAGAACCGGCTGGGGATGTCC", label="MUTATIONS")
                 submit_button = gr.Button("Submit")
             with gr.Column():
                 predictions_output = gr.Textbox(label="Top 3 Predicted Cancer Types")
