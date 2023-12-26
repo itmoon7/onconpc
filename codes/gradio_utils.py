@@ -413,7 +413,7 @@ def launch_gradio(server_name, server_port):
                                 'Well-Differentiated Thyroid Cancer']   
 
     markdown_text = """
-                    **Feature Category Explanations**
+                    **Prediction Explanations**
 
                     **Somatic mutations**: Single nucleotide variants (SNV) and indels. For each gene, the total count of a somatic mutation is encoded as a positive integer feature.
 
@@ -432,6 +432,8 @@ def launch_gradio(server_name, server_port):
                     - See more details in [COSMIC](https://cancer.sanger.ac.uk/signatures/sbs/).
 
                     **Age/Sex**: Patient age at the time of sequencing and biological sex.
+
+                    **SHAP**: impact on OncoNPC prediction (larger magnitude indicates greater impact)
                     """
     manual_input_description = 'In this option, you will manually enter patient and tumor data including age at sequencing, sex, copy number alterations (CNA) events, and somatic mutations.'
     csv_description = 'In this option, you can directly upload relevant CSV files, including clinical patient, clinical sample, mutations, and CNA data from [cBioPortal](https://www.cbioportal.org) or [AACR GENIE](https://www.aacr.org/professionals/research/aacr-project-genie/). Please see the example data in this [link](https://github.com/itmoon7/onconpc/tree/main/data/mock_n_3_data)'
