@@ -15,7 +15,7 @@ def get_base_substitutions():
     ro.r("""   
         library(deconstructSigs)
 
-          mutationData <- read.csv('./mutation_input.csv')
+          mutationData <- read.csv('./mutation_input.csv', colClasses=c("UNIQUE_SAMPLE_ID"="character", "CHROMOSOME"="character", "POSITION"="integer", "REF_ALLELE"="character", "ALT_ALLELE"="character"))
         
           if(nrow(mutationData) == 0) {
             return("Empty mutation data. No processing done.")
@@ -26,6 +26,7 @@ def get_base_substitutions():
 
           # Convert to deconstructSigs input format based on data source
           head(mutationData)
+
           sigs.input <- mut.to.sigs.input(mut.ref = mutationData, 
                                     sample.id = "UNIQUE_SAMPLE_ID", # type: str
                                     chr = "CHROMOSOME", 
@@ -44,7 +45,5 @@ def get_base_substitutions():
           write.csv(sigs.input, file = filename)""")
 
   return "./trinucs_userinput_profile.csv"
-
-  
 
 
