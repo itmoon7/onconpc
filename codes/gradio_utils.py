@@ -32,6 +32,8 @@ markdown_text = """
                 - See more details in [COSMIC](https://cancer.sanger.ac.uk/signatures/sbs/).
 
                 **Age/Sex**: Patient age at the time of sequencing and biological sex.
+
+                **SHAP**: impact on OncoNPC prediction (larger magnitude indicates greater impact)
                 """
 
 # defining global variables
