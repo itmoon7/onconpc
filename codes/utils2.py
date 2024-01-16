@@ -158,6 +158,10 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
     plt.rcParams.update({'font.size': 15, "font.family": "Arial"})
     fig, ax = plt.subplots()
 
+	# remove top and right lines for bar graph
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
     # Sorting and selecting top features based on SHAP values
     all_features = sum(feature_group_to_features_dict.values(), [])
     sorted_features = sorted(all_features, key=lambda x: abs(shap_pred_sample_df.loc[x]), reverse=True)
@@ -203,8 +207,10 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 
     plt.tight_layout()
     if save_plot:
-        plt.savefig(f'{filepath}/{filename}')
-    return f'{filepath}/{filename}'
+        plt.savefig(f'{filepath}/{filename}.svg')
+        plt.savefig(f'{filepath}/{filename}.pdf')
+
+    return f'{filepath}/{filename}.svg'
 
 def get_color(feature_name: str, feature_group_dict: Mapping[str, List[str]]) -> str:
     """
@@ -262,19 +268,20 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 		# Information and plot generation
 		sample_info = f'SAMPLE_ID: {query_id}\nPrediction: {pred_cancer}\nPrediction probability: {pred_prob:.3f}'
 		feature_group_to_features_dict, feature_to_feature_group_dict = partition_feature_names_by_group(df_features_genie.columns)
-		full_filename = get_individual_pred_interpretation(shap_pred_sample_df,
+		explanation_plot = get_individual_pred_interpretation(shap_pred_sample_df,
 													 feature_sample_df,
 													 feature_group_to_features_dict,
 													 feature_to_feature_group_dict, 
 													 sample_info=sample_info,
-													 filename=str(query_id),
+													 filename=str(query_id) + '_'+ str(pred_cancer),
 													 filepath=filepath,
-													 save_plot=save_plot)
+													 save_plot=save_plot) 
+
 		# Store the results
 		results_dict[query_id] = {
 			'pred_prob': pred_prob,
 			'pred_cancer': pred_cancer,
-			'explanation_plot': full_filename
+			'explanation_plot': explanation_plot,
 		}
 	return results_dict
 
