@@ -438,7 +438,7 @@ def launch_gradio(server_name, server_port):
                     **SHAP**: impact on OncoNPC prediction (larger magnitude indicates greater impact)
                     """
     manual_input_description = 'In this option, you will manually enter patient and tumor data including age at sequencing, sex, copy number alterations (CNA) events, and somatic mutations.'
-    csv_description = 'In this option, you can directly upload relevant CSV files, including clinical patient, clinical sample, mutations, and CNA data from [cBioPortal](https://www.cbioportal.org) or [AACR GENIE](https://www.aacr.org/professionals/research/aacr-project-genie/). Please see the example data in this [link](https://github.com/itmoon7/onconpc/tree/main/data/mock_n_3_data)'
+    csv_description = 'In this option, you can directly upload relevant CSV files, including clinical patient, clinical sample, mutations, and CNA data from [cBioPortal](https://www.cbioportal.org) or [AACR GENIE](https://www.aacr.org/professionals/research/aacr-project-genie/). Please see the example data in this [link](https://github.com/itmoon7/onconpc/tree/main/data/mock_n_3_data) <br> Note that column names `Tumor_Sample_Barcode` and `SAMPLE_ID` both refer to the sample identifier column and should be the same.'
 
     with gr.Blocks(css=".markdown-box { border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); padding: 15px; margin-bottom: 20px; }") as demo:
 
@@ -453,9 +453,9 @@ def launch_gradio(server_name, server_port):
             with gr.Column():
                 gr.Markdown("**Clinical Patient Data File:** Upload a file containing patient data. Required columns: `PATIENT_ID`, `SEX`.")
                 patients_file = gr.File(label="Upload clinical patients data")
-                gr.Markdown("**Clinical Sample Data File:** Upload a file containing sample data. Required columns: `PATIENT_ID`, `AGE_AT_SEQ_REPORT`, `Tumor_Sample_Barcode`.")
+                gr.Markdown("**Clinical Sample Data File:** Upload a file containing sample data. Required columns: `PATIENT_ID`, `AGE_AT_SEQ_REPORT`, `SAMPLE_ID`.")
                 samples_file = gr.File(label="Upload clinical samples data")
-                gr.Markdown("**Mutations Data File:** Upload a file containing mutation data. Required columns: `Hugo_Symbol`, `Chromosome`, `Start_Position`, `Reference_Allele`, `Tumor_Seq_Allele2`.")
+                gr.Markdown("**Mutations Data File:** Upload a file containing mutation data. Required columns: `Tumor_Sample_Barcode`, `Hugo_Symbol`, `Chromosome`, `Start_Position`, `Reference_Allele`, `Tumor_Seq_Allele2`.")
                 mutations_file = gr.File(label="Upload mutations data")
                 gr.Markdown("**CNA Data File:** Upload a file containing CNA data. Required column: `Hugo_Symbol`.")
                 cna_file = gr.File(label="Upload CNA data")
