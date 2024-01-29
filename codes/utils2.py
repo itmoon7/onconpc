@@ -109,181 +109,181 @@ def obtain_shap_values_with_latest_xgboost(model: xgb.core.Booster,
 	shap_ex = shap.TreeExplainer(model)
 	return shap_ex.shap_values(data)
 
-def partition_feature_names_by_group(fature_names: List[str]):
-	"""Partitions feature names into groups.
+# def partition_feature_names_by_group(fature_names: List[str]):
+# 	"""Partitions feature names into groups.
 	
-	Args:
-		feature_names: List of feature names.
-	Returns:
-		Dictionary mapping feature groups to feature names.
-	"""
-	feature_group_to_features_dict = collections.defaultdict(list)
-	feature_to_feature_group_dict = {}
-	for feat in fature_names:
-		if 'SBS' in feat:
-			feature_group_to_features_dict['signature'].append(feat)
-			feature_to_feature_group_dict[feat] = 'signature'
-		elif feat in ['Age', 'Sex']:
-			feature_group_to_features_dict['clinical'].append(feat)
-			feature_to_feature_group_dict[feat] = 'clinical'
-		elif 'CNA' in feat:
-			feature_group_to_features_dict['cna'].append(feat)
-			feature_to_feature_group_dict[feat] = 'cna'
-		else:
-			feature_group_to_features_dict['mutation'].append(feat)
-			feature_to_feature_group_dict[feat] = 'mutation'
-	return feature_group_to_features_dict, feature_to_feature_group_dict
+# 	Args:
+# 		feature_names: List of feature names.
+# 	Returns:
+# 		Dictionary mapping feature groups to feature names.
+# 	"""
+# 	feature_group_to_features_dict = collections.defaultdict(list)
+# 	feature_to_feature_group_dict = {}
+# 	for feat in fature_names:
+# 		if 'SBS' in feat:
+# 			feature_group_to_features_dict['signature'].append(feat)
+# 			feature_to_feature_group_dict[feat] = 'signature'
+# 		elif feat in ['Age', 'Sex']:
+# 			feature_group_to_features_dict['clinical'].append(feat)
+# 			feature_to_feature_group_dict[feat] = 'clinical'
+# 		elif 'CNA' in feat:
+# 			feature_group_to_features_dict['cna'].append(feat)
+# 			feature_to_feature_group_dict[feat] = 'cna'
+# 		else:
+# 			feature_group_to_features_dict['mutation'].append(feat)
+# 			feature_to_feature_group_dict[feat] = 'mutation'
+# 	return feature_group_to_features_dict, feature_to_feature_group_dict
 
-def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
-                                               feature_sample_df: pd.DataFrame,
-                                               feature_group_to_features_dict: dict,
-											   feature_to_feature_group_dict: dict,
-                                               sample_info: str = None,
-                                               filename: str = None,
-                                               filepath: str = '../others_prediction_explanation',
-                                               top_feature_num: int = 10,
-                                               save_plot: bool = False):
-    """
-    Dynamic version of the function for individual prediction interpretation for a given tumor sample.
+# def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
+#                                                feature_sample_df: pd.DataFrame,
+#                                                feature_group_to_features_dict: dict,
+# 											   feature_to_feature_group_dict: dict,
+#                                                sample_info: str = None,
+#                                                filename: str = None,
+#                                                filepath: str = '../others_prediction_explanation',
+#                                                top_feature_num: int = 10,
+#                                                save_plot: bool = False):
+#     """
+#     Dynamic version of the function for individual prediction interpretation for a given tumor sample.
 
-    Args:
-        shap_pred_sample_df: DataFrame containing SHAP values for a given tumor sample.
-        feature_sample_df: DataFrame containing feature values for a given tumor sample.
-        feature_group_to_features_dict: Dictionary mapping feature groups to feature names.
-        sample_info: Sample information to be displayed.
-        filename: Filename to save the figure.
-        top_feature_num: Number of top features to display.
-    """
-    # Initialize plot
-    plt.rcParams.update({'font.size': 15, "font.family": "Arial"})
-    fig, ax = plt.subplots()
+#     Args:
+#         shap_pred_sample_df: DataFrame containing SHAP values for a given tumor sample.
+#         feature_sample_df: DataFrame containing feature values for a given tumor sample.
+#         feature_group_to_features_dict: Dictionary mapping feature groups to feature names.
+#         sample_info: Sample information to be displayed.
+#         filename: Filename to save the figure.
+#         top_feature_num: Number of top features to display.
+#     """
+#     # Initialize plot
+#     plt.rcParams.update({'font.size': 15, "font.family": "Arial"})
+#     fig, ax = plt.subplots()
 
-	# remove top and right lines for bar graph
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
+# 	# remove top and right lines for bar graph
+#     ax.spines['right'].set_visible(False)
+#     ax.spines['top'].set_visible(False)
 
-    # Sorting and selecting top features based on SHAP values
-    all_features = sum(feature_group_to_features_dict.values(), [])
-    sorted_features = sorted(all_features, key=lambda x: abs(shap_pred_sample_df.loc[x]), reverse=True)
-    top_features = sorted(sorted_features[:top_feature_num], key=lambda x: shap_pred_sample_df.loc[x], reverse=False)
+#     # Sorting and selecting top features based on SHAP values
+#     all_features = sum(feature_group_to_features_dict.values(), [])
+#     sorted_features = sorted(all_features, key=lambda x: abs(shap_pred_sample_df.loc[x]), reverse=True)
+#     top_features = sorted(sorted_features[:top_feature_num], key=lambda x: shap_pred_sample_df.loc[x], reverse=False)
 
-    # Preparing data for the bar chart
-    top_feats_df = pd.DataFrame({
-        'feat_name': top_features,
-        'SHAP_val': shap_pred_sample_df.loc[top_features],
-        'feat_val': feature_sample_df.loc[top_features],
-        'color': [get_color(feat, feature_group_to_features_dict) for feat in top_features]
-    })
+#     # Preparing data for the bar chart
+#     top_feats_df = pd.DataFrame({
+#         'feat_name': top_features,
+#         'SHAP_val': shap_pred_sample_df.loc[top_features],
+#         'feat_val': feature_sample_df.loc[top_features],
+#         'color': [get_color(feat, feature_group_to_features_dict) for feat in top_features]
+#     })
 
-    # Creating the bar chart
-    ax.barh(top_feats_df['feat_name'], top_feats_df['SHAP_val'], color=top_feats_df['color'])
-    ax.set_xlabel('SHAP Values')
-    ax.set_title(sample_info)
-    ax.set_yticks([])
-    combined_cohort_age_stats = None
-    combined_cohort_age_stats_path = '../data/combined_cohort_age_stats.pkl'
-    with open(combined_cohort_age_stats_path, "rb") as fp:
-        combined_cohort_age_stats = pickle.load(fp)
+#     # Creating the bar chart
+#     ax.barh(top_feats_df['feat_name'], top_feats_df['SHAP_val'], color=top_feats_df['color'])
+#     ax.set_xlabel('SHAP Values')
+#     ax.set_title(sample_info)
+#     ax.set_yticks([])
+#     combined_cohort_age_stats = None
+#     combined_cohort_age_stats_path = '../data/combined_cohort_age_stats.pkl'
+#     with open(combined_cohort_age_stats_path, "rb") as fp:
+#         combined_cohort_age_stats = pickle.load(fp)
 
-    # Dynamic positioning of feature names and values
-    left_margin = ax.get_xlim()[0] * 1.1  # Calculate the left margin dynamically
-    for i, (name, value) in enumerate(zip(top_feats_df['feat_name'], top_feats_df['feat_val'])):
-        value_text = f'{int(value)}' if feature_to_feature_group_dict[name] == 'mutation' else f'{value:.2f}'
-        # Feature name and value
-        if name == 'Sex':
-            value_text = 'Male' if value == 1.0 else 'Female'
-        if name == 'Age':
-            value_text = int(value * combined_cohort_age_stats['Std_mean'] + combined_cohort_age_stats['Age_mean'])
-        if name[-3:] == 'CNA':
-            value_text = f'{int(value)}'
+#     # Dynamic positioning of feature names and values
+#     left_margin = ax.get_xlim()[0] * 1.1  # Calculate the left margin dynamically
+#     for i, (name, value) in enumerate(zip(top_feats_df['feat_name'], top_feats_df['feat_val'])):
+#         value_text = f'{int(value)}' if feature_to_feature_group_dict[name] == 'mutation' else f'{value:.2f}'
+#         # Feature name and value
+#         if name == 'Sex':
+#             value_text = 'Male' if value == 1.0 else 'Female'
+#         if name == 'Age':
+#             value_text = int(value * combined_cohort_age_stats['Std_mean'] + combined_cohort_age_stats['Age_mean'])
+#         if name[-3:] == 'CNA':
+#             value_text = f'{int(value)}'
 
-        ax.text(left_margin, i, f'{name}: {value_text}', ha='right', va='center', fontsize=10)
+#         ax.text(left_margin, i, f'{name}: {value_text}', ha='right', va='center', fontsize=10)
 
-    ax.text(left_margin, top_feature_num, f'feature: value', ha='right', va='center', fontsize=10)
+#     ax.text(left_margin, top_feature_num, f'feature: value', ha='right', va='center', fontsize=10)
 
-    # Adding legend
-    legend_elements = [Patch(facecolor=color, label=label) for label, color in zip(['Somatic Mut.', 'CNA events', 'Mutation Sig.', 'Age/Sex'], ['red', 'green', 'blue', 'grey'])]
-    ax.legend(handles=legend_elements, title='Feature Groups')
+#     # Adding legend
+#     legend_elements = [Patch(facecolor=color, label=label) for label, color in zip(['Somatic Mut.', 'CNA events', 'Mutation Sig.', 'Age/Sex'], ['red', 'green', 'blue', 'grey'])]
+#     ax.legend(handles=legend_elements, title='Feature Groups')
 
-    plt.tight_layout()
-    if save_plot:
-        plt.savefig(f'{filepath}/{filename}.svg')
-        plt.savefig(f'{filepath}/{filename}.pdf')
+#     plt.tight_layout()
+#     if save_plot:
+#         plt.savefig(f'{filepath}/{filename}.svg')
+#         plt.savefig(f'{filepath}/{filename}.pdf')
 
-    return f'{filepath}/{filename}.svg'
+#     return f'{filepath}/{filename}.svg'
 
-def get_color(feature_name: str, feature_group_dict: Mapping[str, List[str]]) -> str:
-    """
-    Determines the color for a given feature based on its group.
+# def get_color(feature_name: str, feature_group_dict: Mapping[str, List[str]]) -> str:
+#     """
+#     Determines the color for a given feature based on its group.
 
-    Args:
-        feature_name: Name of the feature.
-        feature_group_dict: Dictionary mapping feature groups to feature names.
+#     Args:
+#         feature_name: Name of the feature.
+#         feature_group_dict: Dictionary mapping feature groups to feature names.
 
-    Returns:
-        A string representing the color associated with the feature's group.
-    """
-    color_mapping = {'mutation': 'red', 'cna': 'green', 'signature': 'blue', 'clinical': 'grey'}
-    for group, features in feature_group_dict.items():
-        if feature_name in features:
-            return color_mapping[group]
-    return 'black'  # Default color if not found
+#     Returns:
+#         A string representing the color associated with the feature's group.
+#     """
+#     color_mapping = {'mutation': 'red', 'cna': 'green', 'signature': 'blue', 'clinical': 'grey'}
+#     for group, features in feature_group_dict.items():
+#         if feature_name in features:
+#             return color_mapping[group]
+#     return 'black'  # Default color if not found
 
-def get_onconpc_prediction_explanations(query_ids: List[str], 
-										preds_df: pd.DataFrame, 
-										shaps: np.array, 
-										df_features_genie: pd.DataFrame, 
-										cancer_types_to_consider: List[str],
-										filepath: str='../others_prediction_explanation',
-										save_plot: bool=False
-										) -> List[Mapping[str, Any]]:
-	"""
-	Get OncoNPC predictions and generate SHAP-based explanation plots for multiple query IDs.
+# def get_onconpc_prediction_explanations(query_ids: List[str], 
+# 										preds_df: pd.DataFrame, 
+# 										shaps: np.array, 
+# 										df_features_genie: pd.DataFrame, 
+# 										cancer_types_to_consider: List[str],
+# 										filepath: str='../others_prediction_explanation',
+# 										save_plot: bool=False
+# 										) -> List[Mapping[str, Any]]:
+# 	"""
+# 	Get OncoNPC predictions and generate SHAP-based explanation plots for multiple query IDs.
 
-	Args:
-		query_ids: List of IDs of the tumor samples to query.
-		preds_df: DataFrame containing predictions.
-		shaps: Array of SHAP values.
-		df_features_genie: DataFrame containing features.
-		cancer_types_to_consider: List of cancer types considered in the prediction.
-		utils: Utility module with functions for generating plots and other utilities.
+# 	Args:
+# 		query_ids: List of IDs of the tumor samples to query.
+# 		preds_df: DataFrame containing predictions.
+# 		shaps: Array of SHAP values.
+# 		df_features_genie: DataFrame containing features.
+# 		cancer_types_to_consider: List of cancer types considered in the prediction.
+# 		utils: Utility module with functions for generating plots and other utilities.
 
-	Returns:
-		List of dictionaries containing prediction details and explanation plots for each query ID.
-	"""
-	results_dict = {}
-	for query_id in query_ids:
-		# Get OncoNPC prediction
-		pred_prob = preds_df.at[query_id, 'max_posterior']
-		pred_cancer = preds_df.at[query_id, 'cancer_type']
-		pred_cancer_idx = cancer_types_to_consider.index(pred_cancer)
+# 	Returns:
+# 		List of dictionaries containing prediction details and explanation plots for each query ID.
+# 	"""
+# 	results_dict = {}
+# 	for query_id in query_ids:
+# 		# Get OncoNPC prediction
+# 		pred_prob = preds_df.at[query_id, 'max_posterior']
+# 		pred_cancer = preds_df.at[query_id, 'cancer_type']
+# 		pred_cancer_idx = cancer_types_to_consider.index(pred_cancer)
 
-		# Get SHAP-based explanation for the prediction
-		feature_sample_df = df_features_genie.loc[query_id]
-		shap_pred_cancer_df = pd.DataFrame(shaps[pred_cancer_idx],
-										   index=df_features_genie.index,
-										   columns=df_features_genie.columns)
-		shap_pred_sample_df = shap_pred_cancer_df.loc[query_id]
+# 		# Get SHAP-based explanation for the prediction
+# 		feature_sample_df = df_features_genie.loc[query_id]
+# 		shap_pred_cancer_df = pd.DataFrame(shaps[pred_cancer_idx],
+# 										   index=df_features_genie.index,
+# 										   columns=df_features_genie.columns)
+# 		shap_pred_sample_df = shap_pred_cancer_df.loc[query_id]
 
-		# Information and plot generation
-		sample_info = f'SAMPLE_ID: {query_id}\nPrediction: {pred_cancer}\nPrediction probability: {pred_prob:.3f}'
-		feature_group_to_features_dict, feature_to_feature_group_dict = partition_feature_names_by_group(df_features_genie.columns)
-		explanation_plot = get_individual_pred_interpretation(shap_pred_sample_df,
-													 feature_sample_df,
-													 feature_group_to_features_dict,
-													 feature_to_feature_group_dict, 
-													 sample_info=sample_info,
-													 filename=str(query_id) + '_'+ str(pred_cancer),
-													 filepath=filepath,
-													 save_plot=save_plot) 
+# 		# Information and plot generation
+# 		sample_info = f'SAMPLE_ID: {query_id}\nPrediction: {pred_cancer}\nPrediction probability: {pred_prob:.3f}'
+# 		feature_group_to_features_dict, feature_to_feature_group_dict = partition_feature_names_by_group(df_features_genie.columns)
+# 		explanation_plot = get_individual_pred_interpretation(shap_pred_sample_df,
+# 													 feature_sample_df,
+# 													 feature_group_to_features_dict,
+# 													 feature_to_feature_group_dict, 
+# 													 sample_info=sample_info,
+# 													 filename=str(query_id) + '_'+ str(pred_cancer),
+# 													 filepath=filepath,
+# 													 save_plot=save_plot) 
 
-		# Store the results
-		results_dict[query_id] = {
-			'pred_prob': pred_prob,
-			'pred_cancer': pred_cancer,
-			'explanation_plot': explanation_plot,
-		}
-	return results_dict
+# 		# Store the results
+# 		results_dict[query_id] = {
+# 			'pred_prob': pred_prob,
+# 			'pred_cancer': pred_cancer,
+# 			'explanation_plot': explanation_plot,
+# 		}
+# 	return results_dict
 
 def get_onconpc_features_from_raw_data(df_patients_chosen: pd.DataFrame, 
 									   df_samples_chosen: pd.DataFrame, 

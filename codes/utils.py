@@ -13,6 +13,7 @@ from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 import xgboost as xgb
 from adjustText import adjust_text
+from matplotlib.patches import Patch
 
 """
 Author: Intae Moon
@@ -108,31 +109,53 @@ def partition_feature_names_by_group(fature_names: List[str]):
 	Args:
 		feature_names: List of feature names.
 	Returns:
-		Dictionary mapping feature groups to feature names.
+		Dictionary mapping feature groups to feature names and vice versa.
 	"""
 	feature_group_to_features_dict = collections.defaultdict(list)
+	feature_to_feature_group_dict = {}
 	for feat in fature_names:
 		if 'SBS' in feat:
 			feature_group_to_features_dict['signature'].append(feat)
+			feature_to_feature_group_dict[feat] = 'signature'
 		elif feat in ['Age', 'Sex']:
 			feature_group_to_features_dict['clinical'].append(feat)
+			feature_to_feature_group_dict[feat] = 'clinical'
 		elif 'CNA' in feat:
 			feature_group_to_features_dict['cna'].append(feat)
+			feature_to_feature_group_dict[feat] = 'cna'
 		else:
 			feature_group_to_features_dict['mutation'].append(feat)
-	return feature_group_to_features_dict
+			feature_to_feature_group_dict[feat] = 'mutation'
+	return feature_group_to_features_dict, feature_to_feature_group_dict
+
+def get_color(feature_name: str, feature_group_dict: Mapping[str, List[str]]) -> str:
+	"""
+	Determines the color for a given feature based on its group.
+
+	Args:
+		feature_name: Name of the feature.
+		feature_group_dict: Dictionary mapping feature groups to feature names.
+
+	Returns:
+		A string representing the color associated with the feature's group.
+	"""
+	color_mapping = {'mutation': 'red', 'cna': 'green', 'signature': 'blue', 'clinical': 'grey'}
+	for group, features in feature_group_dict.items():
+		if feature_name in features:
+			return color_mapping[group]
+	return 'black'  # Default color if not found
 
 def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 									   feature_sample_df: pd.DataFrame,
-									   feature_group_to_features_dict: Mapping[str, List[str]],
-									   sample_info: Optional[str]=None,
-									   filename: Optional[str]=None,
-									   filepath: str='others_prediction_explanation',
-									   top_feature_num: int=10,
-									   top_n_predictions: Optional[Mapping[str, float]]=None,
-									   save_plot: bool=False):
+									   feature_group_to_features_dict: dict,
+									   feature_to_feature_group_dict: dict,
+									   sample_info: str = None,
+									   filename: str = None,
+									   filepath: str = '../others_prediction_explanation',
+									   top_feature_num: int = 10,
+									   save_plot: bool = False):
 	"""
-	Get individual prediction interpretation for a given tumor sample.
+	Dynamic version of the function for individual prediction interpretation for a given tumor sample.
 
 	Args:
 		shap_pred_sample_df: DataFrame containing SHAP values for a given tumor sample.
@@ -141,141 +164,106 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 		sample_info: Sample information to be displayed.
 		filename: Filename to save the figure.
 		top_feature_num: Number of top features to display.
-		top_n_predictions_dict: Dictionary containing top N predictions.
+		# top_n_predictions_dict: Dictionary containing top N predictions.
 		save_plot: Whether to save the plot.
 	"""
-	# set font size and font family
+	# Initialize plot
+	plt.rcParams.update({'font.size': 15, "font.family": "Arial"})
 	fig, ax = plt.subplots()
-	plt.rcParams.update({'font.size': 15})
-	plt.rcParams["font.family"] = "Arial"
-	plt.close()
 
-	# Create subplots (side-by-side)
-	fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6))
+	# remove top and right lines for bar graph
+	ax.spines['right'].set_visible(False)
+	ax.spines['top'].set_visible(False)
 
-	# Get group-specific absolute SHAP values.
-	group_names=['Somatic Mut.', 'CNA events', 'Mutation Sig.', 'Age/Sex']
-	shaps_in_feature_groups = []; subgroup_names = []
-	for key, feat_names in feature_group_to_features_dict.items():
-		if key == 'mutation':
-			shaps_mutations = list(shap_pred_sample_df.loc[feat_names].abs().values)
-		elif key == 'clinical':
-			shaps_clinical = list(shap_pred_sample_df.loc[feat_names].abs().values)
-		elif key == 'signature':
-			shaps_mut_sigs = list(shap_pred_sample_df.loc[feat_names].abs().values)
-		else:
-			shaps_cna = list(shap_pred_sample_df.loc[feat_names].abs().values)
-	shaps_in_feature_groups = ([shap_pred_sample_df.loc[feature_group_to_features_dict['mutation']].abs().values.sum()] +
-							   [shap_pred_sample_df.loc[feature_group_to_features_dict['cna']].abs().values.sum()] +
-							   [shap_pred_sample_df.loc[feature_group_to_features_dict['signature']].abs().values.sum()] +
-							   [shap_pred_sample_df.loc[feature_group_to_features_dict['clinical']].abs().values.sum()])
-	subgroup_size = shaps_mutations + shaps_cna + shaps_mut_sigs + shaps_clinical
-	cna_names = [name[:-4] for name in feature_group_to_features_dict['cna']] # get rid of CNA at the end
-	subgroup_names_orig = feature_group_to_features_dict['mutation'] + feature_group_to_features_dict['cna'] + feature_group_to_features_dict['signature'] + feature_group_to_features_dict['clinical'] 
-	subgroup_names = feature_group_to_features_dict['mutation'] + cna_names + feature_group_to_features_dict['signature'] + feature_group_to_features_dict['clinical'] 
+	# Sorting and selecting top features based on SHAP values
+	all_features = sum(feature_group_to_features_dict.values(), [])
+	sorted_features = sorted(all_features, key=lambda x: abs(shap_pred_sample_df.loc[x]), reverse=True)
+	top_features = sorted(sorted_features[:top_feature_num], key=lambda x: shap_pred_sample_df.loc[x], reverse=False)
 
-	# Create colors for the pie chart
-	a, b, c, d =[plt.cm.Reds, plt.cm.Greens, plt.cm.Blues, plt.cm.Greys]
-	 
-	# Configure the outer ring (outside)
-	ax[0].axis('equal')
-	first_ring_width = 0.2
-	mypie, _ = ax[0].pie(shaps_in_feature_groups, radius=1.3, labels=group_names, colors=[a(0.6), b(0.6), c(0.6), d(0.6)] )
-	plt.setp( mypie, width=first_ring_width, edgecolor='white')
-	
-	if top_n_predictions:
-		# plot top n predictions as text in ax[0]
-		top_n_preds_str = '\n'.join([f'{pred}: {prob:.3f}' for pred, prob in top_n_predictions.items()])
-		# place them bottom left of the plot
-		ax[0].text(-1.5, -1.875, 'Top 3 predictions', fontsize=12, ha='center', va='center')
-		ax[0].text(-1.5, -2.25, top_n_preds_str, fontsize=12, ha='center', va='center')
-	 
-	# Configure the inner ring
-	subcolors = []; subgroup_portion = []
-	total_score = sum(shaps_in_feature_groups)
-	for idx, (group_val, subgroup_val, color_sel) in enumerate(zip(shaps_in_feature_groups,
-																   [shaps_mutations,
-																   shaps_cna,
-																   shaps_mut_sigs,
-																   shaps_clinical],
-																   [a,b,c,d])):
-		for score in subgroup_val:
-			subgroup_portion.append(score/total_score)
-			if idx == 3:
-				subcolors.append(color_sel(score/group_val*0.6))
-			else:
-				subcolors.append(color_sel(score/group_val))
-	subgroup_names_chosen = []
-	top_features = []
-	top_features_orig = []
-	top_feature_indices = np.argsort(subgroup_portion)[-top_feature_num:]
-	for name, orig_name, idx in zip(subgroup_names, subgroup_names_orig, np.arange(len(subgroup_names))):
-		if idx in top_feature_indices:
-			if name == 'Gender':
-				subgroup_names_chosen.append('Sex')
-			else:
-				subgroup_names_chosen.append(name)
-			top_features_orig.append(orig_name)
-			top_features.append(name)
-		else:
-			subgroup_names_chosen.append('')
+	# Preparing data for the bar chart
+	top_feats_df = pd.DataFrame({
+		'feat_name': top_features,
+		'SHAP_val': shap_pred_sample_df.loc[top_features],
+		'feat_val': feature_sample_df.loc[top_features],
+		'color': [get_color(feat, feature_group_to_features_dict) for feat in top_features]
+	})
 
-	# If clinical features are not in the top feats. Then use lighter shade
-	if 'Age' not in subgroup_names_chosen and 'Gender' not in subgroup_names_chosen:
-		subcolors[-1] = d(0.2)
-		subcolors[-2] = d(0.2)
-	mypie2, _ = ax[0].pie(subgroup_size, radius=1.3-first_ring_width, labels=subgroup_names_chosen, labeldistance=0.8, 
-					   colors=subcolors)
-	plt.setp(mypie2, width=0.4, edgecolor='white')
-	plt.margins(0,0)
-	ax[0].set_title(sample_info)
+	# Creating the bar chart
+	ax.barh(top_feats_df['feat_name'], top_feats_df['SHAP_val'], color=top_feats_df['color'])
+	ax.set_xlabel('SHAP Values')
+	ax.set_title(sample_info)
+	ax.set_yticks([])
+	with open('data/combined_cohort_age_stats.pkl', "rb") as fp:
+		combined_cohort_age_stats = pickle.load(fp)
 
-	top_feats_df = pd.DataFrame([])
-	top_feats_df['feat_name'] = top_features
-	top_feats_df['feat_val'] = feature_sample_df.loc[top_features_orig].values
-	top_feats_df['SHAP_val'] = shap_pred_sample_df.loc[top_features_orig].values
+	# Dynamic positioning of feature names and values
+	left_margin = ax.get_xlim()[0] * 1.1  # Calculate the left margin dynamically
+	for i, (name, value) in enumerate(zip(top_feats_df['feat_name'], top_feats_df['feat_val'])):
+		value_text = f'{int(value)}' if feature_to_feature_group_dict[name] == 'mutation' else f'{value:.2f}'
+		# Feature name and value
+		if name == 'Sex':
+			value_text = 'Male' if value == 1.0 else 'Female'
+		if name == 'Age':
+			value_text = int(value * combined_cohort_age_stats['Std_mean'] + combined_cohort_age_stats['Age_mean'])
+		if name[-3:] == 'CNA':
+			value_text = f'{int(value)}'
 
-	top_features_color = []
-	for feat in top_features_orig:
-		if feat in feature_group_to_features_dict['mutation']:
-			top_features_color.append('red')
-		elif feat in feature_group_to_features_dict['cna']:
-			top_features_color.append('green')
-		elif feat in feature_group_to_features_dict['signature']:
-			top_features_color.append('blue')
-		else:
-			top_features_color.append('gray')
+		ax.text(left_margin, i, f'{name}: {value_text}', ha='right', va='center', fontsize=10)
 
-	top_feats_df['colors'] = top_features_color
-	top_feats_df.sort_values('feat_val', inplace = True)
-	dot_size_list = []
-	for val in top_feats_df.SHAP_val.values:
-		dot_size_list.append(abs(val)*150)
-	ax[1].scatter(top_feats_df.feat_val.values, top_feats_df.SHAP_val.values, color = top_feats_df.colors, s=dot_size_list, alpha=0.6)
-	# Label markers
-	texts = [plt.text(x_cor, y_cor, feat_name, ha = 'center', va = 'center', color = color) for x_cor, y_cor, color, feat_name in zip(top_feats_df.feat_val.values, top_feats_df.SHAP_val.values, top_feats_df.colors.values, top_feats_df.feat_name.values)]
-	adjust_text(texts, expand_text = (1.6, 1.8), arrowprops=dict(arrowstyle='-', color='black', linestyle = ':'))
-	ax[1].set_xlabel('Feature value')
-	ax[1].set_ylabel('SHAP value')
-	ax[1].set_xlim(min(top_feats_df.feat_val.values) - 0.25, max(top_feats_df.feat_val.values) + 0.25)
-	ax[1].set_ylim(min(top_feats_df.SHAP_val.values) - 0.25, max(top_feats_df.SHAP_val.values) + 0.25)
+	ax.text(left_margin, top_feature_num, f'feature: value', ha='right', va='center', fontsize=10)
 
-	ax[1].axhline(y=0, color='k', linestyle='--', alpha=0.5)
-	ax[1].axvline(x=0, color='k', linestyle='--', alpha=0.5)
+	# Adding legend
+	legend_elements = [Patch(facecolor=color, label=label) for label, color in zip(['Somatic Mut.', 'CNA events', 'Mutation Sig.', 'Age/Sex'], ['red', 'green', 'blue', 'grey'])]
+	ax.legend(handles=legend_elements, title='Feature Groups')
 
-	ax[1].spines['right'].set_visible(False)
-	ax[1].spines['top'].set_visible(False)
-
-	fig.tight_layout()
-	# Store image as a pdf
+	plt.tight_layout()
 	if save_plot:
-		full_filename = os.path.join(filepath, filename + '.pdf')
-		plt.savefig(full_filename,
-			  bbox_inches='tight')
+		plt.savefig(f'{filepath}/{filename}.pdf')
+	else:
 		plt.show()
-		print(f'Explanation plot saved at {full_filename}')
-		return full_filename
-	plt.show()
+	plt.close()
+	return f'{filepath}/{filename}.pdf'
+
+def get_top_n_pred_and_shap(
+		preds_df: pd.DataFrame,
+		shaps: np.asarray,		
+		features: List[str],		
+		cancer_types: List[str],
+		n: int=3) -> Mapping[str, Mapping[str, Any]]:
+	"""
+	Get top n predictions for each sample in the given DataFrame.
+	Args:
+		preds_df: DataFrame containing predictions.
+		shaps: Array of SHAP values.
+		features: List of features.
+		n: Number of top predictions to return.
+		cancer_types: List of cancer types.
+	Returns:
+		Dictionary containing top n predictions and SHAP values for each sample.
+	"""
+	# Filter only relevant columns (cancer types)
+	df_chosen = preds_df[cancer_types]
+	# Initialize the dictionary for SHAP values
+	sample_id_to_top_n_pred_and_shaps_df = {}
+	for sample_id, row in df_chosen.iterrows():
+		# Getting the top n predictions sorted by their probabilities
+		sorted_top_3 = row.nlargest(n).sort_values(ascending=False)
+		# Get row index for sample_id
+		row_idx = preds_df.index.get_loc(sample_id)
+		# Store the top n predictions and their probabilities
+		shap_dfs = []
+		for pred_cancer in sorted_top_3.index:
+			pred_cancer_idx = cancer_types.index(pred_cancer)
+			shap_pred_cancer_df = pd.DataFrame(shaps[pred_cancer_idx][row_idx],
+										   index=features,
+										   columns=[pred_cancer]).T
+			shap_dfs.append(shap_pred_cancer_df)
+		shap_total_df = pd.concat(shap_dfs)
+		sample_id_to_top_n_pred_and_shaps_df[sample_id] = {
+			'top_n_predictions': sorted_top_3.to_dict(),
+			'shap_values_df': shap_total_df
+		}
+	return sample_id_to_top_n_pred_and_shaps_df
 
 def get_onconpc_prediction_explanations(query_ids: List[str], 
 										preds_df: pd.DataFrame, 
@@ -284,7 +272,6 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 										cancer_types_to_consider: List[str],
 										filepath: str='others_prediction_explanation',
 										save_plot: bool=False,
-										top_three_preds: bool=False,
 										) -> List[Mapping[str, Any]]:
 	"""
 	Get OncoNPC predictions and generate SHAP-based explanation plots for multiple query IDs.
@@ -297,12 +284,9 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 		cancer_types_to_consider: List of cancer types considered in the prediction.
 		filepath: Path to save the explanation plots.
 		save_plot: Whether to save the explanation plots.
-		top_three_preds: Whether to visualize top three predictions.
 	Returns:
 		List of dictionaries containing prediction details and explanation plots for each query ID.
 	"""
-	if top_three_preds:
-		top_n_predictions_dict = get_top_n_pred(preds_df, cancer_types_to_consider, n=3)
 	results_dict = {}
 	for query_id in query_ids:
 		# Get OncoNPC prediction
@@ -319,16 +303,14 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 
 		# Information and plot generation
 		sample_info = f'SAMPLE_ID: {query_id}\nPrediction: {pred_cancer}\nPrediction probability: {pred_prob:.3f}'
-		feature_group_to_features_dict = partition_feature_names_by_group(df_features_genie.columns)
-		top_n_predictions = None if not top_three_preds else top_n_predictions_dict[query_id]
-		full_filename = get_individual_pred_interpretation(shap_pred_sample_df,
-													 feature_sample_df,
-													 feature_group_to_features_dict,
-													 sample_info=sample_info,
-													 filename=str(query_id),
-													 filepath=filepath,
-													 top_n_predictions=top_n_predictions,
-													 save_plot=save_plot)
+		(feature_group_to_features_dict,
+   feature_to_feature_group_dict) = partition_feature_names_by_group(df_features_genie.columns)
+
+		# Plot the explanation
+		full_filename = get_individual_pred_interpretation(
+			shap_pred_sample_df, feature_sample_df, feature_group_to_features_dict,
+			feature_to_feature_group_dict, sample_info=sample_info, filename=str(query_id),
+			filepath=filepath, save_plot=save_plot)
 		# Store the results
 		results_dict[query_id] = {
 			'pred_prob': pred_prob,
@@ -722,26 +704,3 @@ def standardize_feat_names(curr_feat_names: List[str]) -> List[str]:
 		else:   
 			new_feat_names.append(feat + ' CNA')
 	return new_feat_names
-
-def get_top_n_pred(df: pd.DataFrame,				
-				   cancer_types: List[str],
-				   n: int=3) -> Mapping[str, Mapping[str, float]]:
-	"""
-	Get top n predictions for each sample in the given DataFrame.
-	Args:
-		df: DataFrame containing predictions.
-		n: Number of top predictions to return.
-		cancer_types: List of cancer types.
-	Returns:
-		Dictionary mapping each sample ID to top n predictions and their corresponding probability values.
-	"""
-	# Drop columns other than cancer types
-	columns_to_drop = [c for c in df.columns if c not in cancer_types]
-	df_chosen = df.drop(columns=columns_to_drop)
-	# Creating a dictionary to map each sample ID to top 3 predictions and their corresponding probability values
-	top_n_predictions_dict = {}
-	for index, row in df_chosen.iterrows():
-		# Getting the top n predictions sorted by their probabilities
-		sorted_top_3 = row.nlargest(n).sort_values(ascending=False)
-		top_n_predictions_dict[index] = sorted_top_3.to_dict()
-	return top_n_predictions_dict
