@@ -121,7 +121,7 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
                                                         cancer_types_to_consider,
                                                         save_plot=True) 
 
-    return get_top3(predictions, tumor_id),  gr.Markdown(markdown_text), results[tumor_id]['explanation_plot'] + '.png' 
+    return get_top3(predictions, tumor_id),  gr.Markdown(markdown_text), results[tumor_id]['explanation_plot']
 
 def parse_inputs(age, gender, CNA_events, mutations, sample_id):
 
@@ -289,7 +289,7 @@ def get_preds_min_info(age, gender, CNA_events, mutations, output='Top Predictio
                                                         save_plot=True)
 
     # Return the top 3 predictions and the path to the explanation plot
-    return get_top3(predictions, 0), gr.Markdown(markdown_text,elem_classes="markdown-box"), results[0]['explanation_plot'] + '.png'
+    return get_top3(predictions, 0), gr.Markdown(markdown_text,elem_classes="markdown-box"), results[0]['explanation_plot']
 
 def get_top3(predictions, tumor_sample_id):
     """
@@ -362,8 +362,8 @@ def update_image(target):
     # Generate explanation plot
     sample_info = f'Prediction: {target}\nPrediction probability: {probability:.3f}'
     feature_group_to_features_dict, feature_to_feature_group_dict = utils.partition_feature_names_by_group(features.columns)
-    fig = utils.get_individual_pred_interpretation(shap_pred_sample_df, feature_sample_df, feature_group_to_features_dict, feature_to_feature_group_dict,sample_info=sample_info, filename=f'{target}_plot.png', filepath='../others_prediction_explanation', save_plot=True)
-    return fig
+    explanation_plot = utils.get_individual_pred_interpretation(shap_pred_sample_df, feature_sample_df, feature_group_to_features_dict, feature_to_feature_group_dict,sample_info=sample_info, filename=f'{sample_id}_{target}_plot', filepath='../others_prediction_explanation', save_plot=True)
+    return explanation_plot
 
 def show_row(value):
     """
@@ -435,7 +435,8 @@ def launch_gradio(server_name, server_port):
 
                     **Age/Sex**: Patient age at the time of sequencing and biological sex.
 
-                    **SHAP**: impact on OncoNPC prediction (larger magnitude indicates greater impact)
+                    **SHAP Values**: impact on OncoNPC prediction 
+                    - larger magnitude indicates greater impact
                     """
     manual_input_description = 'In this option, you will manually enter patient and tumor data including age at sequencing, sex, copy number alterations (CNA) events, and somatic mutations.'
     csv_description = 'In this option, you can directly upload relevant CSV files, including clinical patient, clinical sample, mutations, and CNA data from [cBioPortal](https://www.cbioportal.org) or [AACR GENIE](https://www.aacr.org/professionals/research/aacr-project-genie/). Please see the example data in this [link](https://github.com/itmoon7/onconpc/tree/main/data/mock_n_3_data) <br> Note that column names `Tumor_Sample_Barcode` and `SAMPLE_ID` both refer to the sample identifier column and should be the same.'
@@ -465,13 +466,13 @@ def launch_gradio(server_name, server_port):
             with gr.Column():
                 predictions_output = gr.Textbox(label="Top 3 Predicted Cancer Types")
                 category_explanation = gr.Markdown(markdown_text,elem_classes="markdown-box")
-                image = gr.Image(label="Image Display")
+                image = gr.Image(label="Image Display") 
                 output_selector = gr.Dropdown(choices=cancer_types_to_consider, label="Output Options", filterable=True)
                 gr.Markdown('For more details regarding OncoNPC feature processing, OncoNPC performance, and clinical implications of OncoNPC predictions, please see our [manuscript](https://www.nature.com/articles/s41591-023-02482-6).', elem_classes="markdown-box")
 
             samples_file.change(extract_sample_ids, inputs=samples_file, outputs=tumor_sample_id)
             submit_button.click(get_preds, inputs=[patients_file, samples_file, mutations_file, cna_file, tumor_sample_id], outputs=[predictions_output, category_explanation, image])
-            output_selector.change(update_image, inputs=output_selector, outputs=image)
+            output_selector.change(update_image, inputs=output_selector, outputs=[image])
 
         with gr.Row(visible=False) as r2:
             with gr.Column():
@@ -488,7 +489,7 @@ def launch_gradio(server_name, server_port):
                 gr.Markdown('For more details regarding OncoNPC feature processing, OncoNPC performance, and clinical implications of OncoNPC predictions, please see our [manuscript](https://www.nature.com/articles/s41591-023-02482-6).', elem_classes="markdown-box")
 
             submit_button.click(get_preds_min_info, inputs=[age, gender, cna_events, mutations], outputs=[predictions_output, category_explanation, image])
-            output_selector.change(update_image, inputs=output_selector, outputs=image)
+            output_selector.change(update_image, inputs=output_selector, outputs=[image])
 
         d.change(show_row, d, [r1, r2])
         d.change(show_row, d, [r3, r4])
