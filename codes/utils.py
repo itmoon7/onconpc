@@ -4,6 +4,7 @@ import collections
 import os
 import pickle
 from matplotlib.patches import Patch
+from rpy2.robjects import conversion, default_converter
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -194,7 +195,7 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
     ax.set_title(sample_info)
     ax.set_yticks([])
     combined_cohort_age_stats = None
-    combined_cohort_age_stats_path = './data/combined_cohort_age_stats.pkl'
+    combined_cohort_age_stats_path = '../data/combined_cohort_age_stats.pkl'
     with open(combined_cohort_age_stats_path, "rb") as fp:
         combined_cohort_age_stats = pickle.load(fp)
 
@@ -233,7 +234,7 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 										shaps: np.array, 
 										df_features_genie: pd.DataFrame, 
 										cancer_types_to_consider: List[str],
-										filepath: str='others_prediction_explanation',
+										filepath: str='../others_prediction_explanation',
 										save_plot: bool=False,
 										) -> List[Mapping[str, Any]]:
 	"""
@@ -371,6 +372,7 @@ def get_snv_in_trinuc_context(df_mutations: pd.DataFrame,
 	# Change the data types for R processing
 	df_mutations_chosen_trinuc[sample_id_col] = df_mutations_chosen_trinuc[sample_id_col].astype('str')
 	# R function code
+
 	r_code = '''
 	function(mutationData, sample_id, chr, pos, ref, alt) {
 		library(deconstructSigs)
@@ -387,18 +389,22 @@ def get_snv_in_trinuc_context(df_mutations: pd.DataFrame,
 	}
 	'''
 	# Convert the DataFrame for R processing
-	with localconverter(robjects.default_converter + pandas2ri.converter):
-		r_df_mutations = robjects.conversion.py2rpy(df_mutations_chosen_trinuc)
+	with conversion.localconverter(default_converter):
+
+		with localconverter(robjects.default_converter + pandas2ri.converter):
+			r_df_mutations = robjects.conversion.py2rpy(df_mutations_chosen_trinuc)
 
 	# Load and call the R function
-	r_function = robjects.r(r_code)
-	with localconverter(robjects.default_converter + pandas2ri.converter):
-		df_trinuc_feats = robjects.conversion.rpy2py(r_function(r_df_mutations, 
-															   sample_id_col, 
-															   chromosome_col, 
-															   start_pos_col, 
-															   ref_allele_col, 
-															   alt_allele_col))
+		r_function = robjects.r(r_code)
+	with conversion.localconverter(default_converter):
+
+		with localconverter(robjects.default_converter + pandas2ri.converter):
+			df_trinuc_feats = robjects.conversion.rpy2py(r_function(r_df_mutations, 
+																sample_id_col, 
+																chromosome_col, 
+																start_pos_col, 
+																ref_allele_col, 
+																alt_allele_col))
 	if config=='profile_dfci':
 		df_trinuc_feats.index = df_trinuc_feats.index.astype('float')
 	return df_trinuc_feats
