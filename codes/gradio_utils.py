@@ -113,8 +113,7 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
         combined_cohort_age_stats_path='../data/combined_cohort_age_stats.pkl',
         mut_sig_weights_filepath='../data/mutation_signatures/sigProfiler*.csv'
     )
-    df_features_genie_final.to_csv('../data/onconpc_features2.csv')
-
+    df_features_genie_final.to_csv('../data/onconpc_features2.csv', index=True)
     sample_id = tumor_id
     features = df_features_genie_final
 
@@ -124,7 +123,7 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
     
     # predict primary sites of CUP tumors
     predictions = utils.get_xgboost_latest_cancer_type_preds(xgb_onconpc,
-                                                          df_features_genie_final,
+                                                          features,
                                                           cancer_types_to_consider)
 
     # get SHAP values for CUP tumors
@@ -214,15 +213,17 @@ def parse_inputs(age, gender, CNA_events, mutations):
     age =  (age - combined_cohort_age_stats['Age_mean']) / combined_cohort_age_stats['Std_mean']
 
     # Convert gender to numerical value: male as 1, otherwise -1
-    gender = 1 if gender == 'Male' else -1
+    gender = 1.0 if gender == 'Male' else -1.0
     
+    data = {'Age': age, 'Sex': gender} # TODO: Check how this is normalized 
+
     # Process CNA events: Expected format [[CNA, val], [CNA, val]]
     if len(CNA_events) > 0:
         CNA_events = CNA_events.split('|')
         for i in range(len(CNA_events)):
             # Split each event into CNA and value, and cast the value to integer
             CNA, val = CNA_events[i].split()
-            CNA_events[i] = [CNA + ' CNA', int(val)] # Cast val to integer
+            CNA_events[i] = [CNA + ' CNA', float(val)] # Cast val to float
     else:
         CNA_events = []
 
@@ -233,6 +234,14 @@ def parse_inputs(age, gender, CNA_events, mutations):
             # Split each mutation entry and strip white space
             mutations[i] = ['manual input'] + mutations[i].split(', ')
             mutations[i] = [m.strip() for m in mutations[i]] # Strip white space
+            #TODO: clean this up
+            try:
+                data[mutations[i][1]] += 1.0
+            except:
+                try:
+                    data[mutations[i][1]] = 1.0
+                except:
+                    mutations = []
     else:
         mutations = []
 
@@ -251,7 +260,6 @@ def parse_inputs(age, gender, CNA_events, mutations):
     mutation_signatures = utils.obtain_mutation_signatures(df_trinuc_feats)    
 
     # Initialize data dictionary and populate with age and mutation signatures
-    data = {'Age': age} # TODO: Check how this is normalized 
     for column in mutation_signatures.columns:
         data[column] = mutation_signatures.loc[0][column]
     
@@ -297,7 +305,8 @@ def get_preds_min_info(age, gender, CNA_events, mutations, output='Top Predictio
             features = features.drop(column, axis=1)
     new_columns_df = pd.DataFrame(columns_to_add)
     features = pd.concat([features, new_columns_df], axis=1)
-    
+    features = features[all_features]
+
     # Generate predictions using the XGBoost model
     predictions = pd.DataFrame(utils.get_xgboost_latest_cancer_type_preds(xgb_onconpc, features, cancer_types_to_consider))
     
