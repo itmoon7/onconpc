@@ -14,6 +14,7 @@ from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 import xgboost as xgb
 from adjustText import adjust_text
+from matplotlib.patches import Patch
 
 """
 Author: Intae Moon
@@ -109,7 +110,7 @@ def partition_feature_names_by_group(fature_names: List[str]):
 	Args:
 		feature_names: List of feature names.
 	Returns:
-		Dictionary mapping feature groups to feature names.
+		Dictionary mapping feature groups to feature names and vice versa.
 	"""
 	feature_group_to_features_dict = collections.defaultdict(list)
 	feature_to_feature_group_dict = {}
@@ -234,7 +235,6 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 										cancer_types_to_consider: List[str],
 										filepath: str='others_prediction_explanation',
 										save_plot: bool=False,
-										top_three_preds: bool=False,
 										) -> List[Mapping[str, Any]]:
 	"""
 	Get OncoNPC predictions and generate SHAP-based explanation plots for multiple query IDs.
@@ -247,12 +247,9 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 		cancer_types_to_consider: List of cancer types considered in the prediction.
 		filepath: Path to save the explanation plots.
 		save_plot: Whether to save the explanation plots.
-		top_three_preds: Whether to visualize top three predictions.
 	Returns:
 		List of dictionaries containing prediction details and explanation plots for each query ID.
 	"""
-	if top_three_preds:
-		top_n_predictions_dict = get_top_n_pred(preds_df, cancer_types_to_consider, n=3)
 	results_dict = {}
 	for query_id in query_ids:
 		# Get OncoNPC prediction
@@ -270,7 +267,6 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 		# Information and plot generation
 		sample_info = f'SAMPLE_ID: {query_id}\nPrediction: {pred_cancer}\nPrediction probability: {pred_prob:.3f}'
 		feature_group_to_features_dict, feature_to_feature_group_dict = partition_feature_names_by_group(df_features_genie.columns)
-		top_n_predictions = None if not top_three_preds else top_n_predictions_dict[query_id]
 		full_filename = get_individual_pred_interpretation(shap_pred_sample_df,
 													 feature_sample_df,
 													 feature_group_to_features_dict,
@@ -673,26 +669,3 @@ def standardize_feat_names(curr_feat_names: List[str]) -> List[str]:
 		else:   
 			new_feat_names.append(feat + ' CNA')
 	return new_feat_names
-
-def get_top_n_pred(df: pd.DataFrame,				
-				   cancer_types: List[str],
-				   n: int=3) -> Mapping[str, Mapping[str, float]]:
-	"""
-	Get top n predictions for each sample in the given DataFrame.
-	Args:
-		df: DataFrame containing predictions.
-		n: Number of top predictions to return.
-		cancer_types: List of cancer types.
-	Returns:
-		Dictionary mapping each sample ID to top n predictions and their corresponding probability values.
-	"""
-	# Drop columns other than cancer types
-	columns_to_drop = [c for c in df.columns if c not in cancer_types]
-	df_chosen = df.drop(columns=columns_to_drop)
-	# Creating a dictionary to map each sample ID to top 3 predictions and their corresponding probability values
-	top_n_predictions_dict = {}
-	for index, row in df_chosen.iterrows():
-		# Getting the top n predictions sorted by their probabilities
-		sorted_top_3 = row.nlargest(n).sort_values(ascending=False)
-		top_n_predictions_dict[index] = sorted_top_3.to_dict()
-	return top_n_predictions_dict
