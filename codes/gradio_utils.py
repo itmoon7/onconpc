@@ -8,6 +8,7 @@ import gradio as gr
 import deconstruct_sigs_from_user_input as deconstructSigs
 import pickle
 import gradio as gr
+import os
 
 global image # path to explanation plot, defined as global for the purposes of update 
 global features
@@ -76,6 +77,9 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
     samples_df = pd.read_csv(samples_file.name, sep='\t')
     mutations_df = pd.read_csv(mutations_file.name, sep='\t')
     cna_df = pd.read_csv(cna_file.name, sep='\t') 
+
+    if tumor_id is None:
+        raise gr.Error('Tumor Sample ID cannot be empty')
 
     
     patients_columns = set(['PATIENT_ID', 'SEX'])
@@ -206,6 +210,10 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
 def parse_inputs(age, gender, CNA_events, mutations):
     # Normalization of age input
     age = age 
+    try:
+        int(age)
+    except:
+        raise gr.Error('Age should be a positive numerical value')
     combined_cohort_age_stats = None
     combined_cohort_age_stats_path = '../data/combined_cohort_age_stats.pkl'
     with open(combined_cohort_age_stats_path, "rb") as fp:
@@ -222,8 +230,12 @@ def parse_inputs(age, gender, CNA_events, mutations):
         CNA_events = CNA_events.split('|')
         for i in range(len(CNA_events)):
             # Split each event into CNA and value, and cast the value to integer
-            CNA, val = CNA_events[i].split()
-            CNA_events[i] = [CNA + ' CNA', float(val)] # Cast val to float
+            try:
+                CNA, val = CNA_events[i].split()
+                CNA_events[i] = [CNA + ' CNA', float(val)] # Cast val to float
+            except Exception as e:
+                raise gr.Error(f'Error in CNA events. {e}')
+
     else:
         CNA_events = []
 
@@ -246,9 +258,12 @@ def parse_inputs(age, gender, CNA_events, mutations):
         mutations = []
 
     # Define mutation columns for DataFrame and create mutation DataFrame
-    mutation_columns = ["UNIQUE_SAMPLE_ID", "HUGO_SYMBOL", "CHROMOSOME", "POSITION", "REF_ALLELE", "ALT_ALLELE"]
-    mutation_full_df = pd.DataFrame(mutations, columns=mutation_columns) if mutations else pd.DataFrame(columns=mutation_columns)
-    mutation_df = mutation_full_df.drop('HUGO_SYMBOL', axis=1, inplace=False)
+    try:
+        mutation_columns = ["UNIQUE_SAMPLE_ID", "HUGO_SYMBOL", "CHROMOSOME", "POSITION", "REF_ALLELE", "ALT_ALLELE"]
+        mutation_full_df = pd.DataFrame(mutations, columns=mutation_columns) if mutations else pd.DataFrame(columns=mutation_columns)
+        mutation_df = mutation_full_df.drop('HUGO_SYMBOL', axis=1, inplace=False)
+    except Exception as e:
+        raise gr.Error(f'Error in somatic mutations. {e}')
     
     # Save mutation data to a CSV file
     mutation_df.to_csv('./mutation_input.csv', index=False)
