@@ -80,6 +80,8 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
 
     if tumor_id is None:
         raise gr.Error('Tumor Sample ID cannot be empty')
+    else:
+        print(tumor_id)
 
     
     patients_columns = set(['PATIENT_ID', 'SEX'])
@@ -389,7 +391,7 @@ def extract_sample_ids(samples_file):
     df = pd.read_csv(samples_file.name, sep='\t')
     # Assuming the column containing the sample IDs is named 'SampleID'
     sample_ids = df['SAMPLE_ID'].unique().tolist()
-    return  gr.Dropdown.update(choices=sample_ids)
+    return  gr.Dropdown(choices=sample_ids)
 
 def update_image(target):
     global image
