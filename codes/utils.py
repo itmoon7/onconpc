@@ -155,6 +155,7 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
                                                sample_info: str = None,
                                                filename: str = None,
                                                filepath: str = '../others_prediction_explanation',
+											   cohort_age_stats_path: str = '../data/combined_cohort_age_stats.pkl',
                                                top_feature_num: int = 10,
                                                save_plot: bool = False):
     """
@@ -194,9 +195,8 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
     ax.set_xlabel('SHAP Values')
     ax.set_title(sample_info)
     ax.set_yticks([])
-    combined_cohort_age_stats = None
-    combined_cohort_age_stats_path = '../data/combined_cohort_age_stats.pkl'
-    with open(combined_cohort_age_stats_path, "rb") as fp:
+    
+    with open(cohort_age_stats_path, "rb") as fp:
         combined_cohort_age_stats = pickle.load(fp)
 
     # Dynamic positioning of feature names and values
@@ -227,7 +227,46 @@ def get_individual_pred_interpretation(shap_pred_sample_df: pd.DataFrame,
 
     return f'{filepath}/{filename}.svg'
 
-
+def get_top_n_pred_and_shap(
+		preds_df: pd.DataFrame,
+		shaps: np.asarray,		
+		features: List[str],		
+		cancer_types: List[str],
+		n: int=3) -> Mapping[str, Mapping[str, Any]]:
+	"""
+	Get top n predictions for each sample in the given DataFrame.
+	Args:
+		preds_df: DataFrame containing predictions.
+		shaps: Array of SHAP values.
+		features: List of features.
+		n: Number of top predictions to return.
+		cancer_types: List of cancer types.
+	Returns:
+		Dictionary containing top n predictions and SHAP values for each sample.
+	"""
+	# Filter only relevant columns (cancer types)
+	df_chosen = preds_df[cancer_types]
+	# Initialize the dictionary for SHAP values
+	sample_id_to_top_n_pred_and_shaps_df = {}
+	for sample_id, row in df_chosen.iterrows():
+		# Getting the top n predictions sorted by their probabilities
+		sorted_top_3 = row.nlargest(n).sort_values(ascending=False)
+		# Get row index for sample_id
+		row_idx = preds_df.index.get_loc(sample_id)
+		# Store the top n predictions and their probabilities
+		shap_dfs = []
+		for pred_cancer in sorted_top_3.index:
+			pred_cancer_idx = cancer_types.index(pred_cancer)
+			shap_pred_cancer_df = pd.DataFrame(shaps[pred_cancer_idx][row_idx],
+										   index=features,
+										   columns=[pred_cancer]).T
+			shap_dfs.append(shap_pred_cancer_df)
+		shap_total_df = pd.concat(shap_dfs)
+		sample_id_to_top_n_pred_and_shaps_df[sample_id] = {
+			'top_n_predictions': sorted_top_3.to_dict(),
+			'shap_values_df': shap_total_df
+		}
+	return sample_id_to_top_n_pred_and_shaps_df
 
 def get_onconpc_prediction_explanations(query_ids: List[str], 
 										preds_df: pd.DataFrame, 
@@ -235,6 +274,7 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 										df_features_genie: pd.DataFrame, 
 										cancer_types_to_consider: List[str],
 										filepath: str='../others_prediction_explanation',
+										cohort_age_stats_path: str='../data/combined_cohort_age_stats.pkl',
 										save_plot: bool=False,
 										) -> List[Mapping[str, Any]]:
 	"""
@@ -276,6 +316,7 @@ def get_onconpc_prediction_explanations(query_ids: List[str],
 													 filename=str(query_id),
 													 filepath=filepath,
 													 top_feature_num=10,
+													 cohort_age_stats_path=cohort_age_stats_path,
 													 save_plot=save_plot)
 		# Store the results
 		results_dict[query_id] = {
