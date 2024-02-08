@@ -1,0 +1,57 @@
+# General System Files
+.DS_Store
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Individual Jupyter Notebooks
+Untitled.ipynb
+*.ipynb_checkpoints/
+
+# Python cache files
+__pycache__/
+
+# Specific files and directories in 'codes'
+codes/.DS_Store
+codes/.ipynb_checkpoints/
+codes/__pycache__/
+codes/deconstructSigs_trinucs_data_per_tumor_sample.R
+codes/deconstructSigs_trinucs_data_subset.R
+codes/environment.yml
+codes/mutation_file_checks.ipynb
+codes/performance_report_internal.ipynb
+codes/pred_probs_gmm.ipynb
+codes/train_evaluate_onconpc_latest_xgboost.py
+codes/train_evaluate_onconpc_old_version.py
+
+# Specific files and directories in 'data'
+data/.DS_Store
+data/GENOMIC_SPECIMEN.csv
+data/features_combined_*
+data/features_dfci_*
+data/features_genie_*
+data/internal_training_data/
+data/k_fold_to_performance_report_dict_test_*.pkl
+data/labels_combined_*
+data/labels_dfci_*
+data/labels_genie_*
+data/mut_sig_genie_df.csv
+data/onconpc_processed_cups_data_internal
+data/onconpc_sample_id_to_sample_accession_nbr.pkl
+data/pred_probs_on_val_total_df_test_*.csv
+data/profile_genomic_specimen_internal.csv
+data/profile_patient_info_internal
+data/seq_panel_data/
+data/treatment_plans_internal
+
+# Models and Notebooks directories
+models/
+notebooks/
+
+# Specific Jupyter Notebooks
+onconpc_prediction_and_explanation_for_cup_tumors_internal.ipynb
+onconpc_prediction_and_explanation_for_cup_tumors_latest_xgboost.ipynb
+onconpc_prediction_and_explanation_for_cup_tumors_latest_xgboost_query.ipynb
+onconpc_prediction_and_explanation_for_cup_tumors_old.ipynb
+onconpc_prediction_and_explanation_for_cup_tumors_v2.ipynb
+
