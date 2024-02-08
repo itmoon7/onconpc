@@ -71,19 +71,44 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
             A string containing the top 3 most probable cancers along with their predicted probabilities. 
             The filepath to the SHAP value bar chart explaining the prediction for the given tumor ID.
     """
+    # make sure all files have been uploaded
+    if patients_file is None or samples_file is None or cna_file is None or mutations_file is None:
+        raise gr.Error('Please make sure all files have been properly uploaded')
+
+    # convert files to data frames 
+    if patients_file.name[-4:] == '.txt':
+        patients_df = pd.read_csv(patients_file.name, sep='\t')
+    elif patients_file.name[-4:] == '.csv':
+        patients_df = pd.read_csv(patients_file.name)
+    else:
+        raise gr.Error('Please make sure all files are .txt or .csv files')
     
-    # convert files to data frames
-    patients_df = pd.read_csv(patients_file.name, sep='\t')
-    samples_df = pd.read_csv(samples_file.name, sep='\t')
-    mutations_df = pd.read_csv(mutations_file.name, sep='\t')
-    cna_df = pd.read_csv(cna_file.name, sep='\t') 
+    if samples_file.name[-4:] == '.txt':
+        samples_df = pd.read_csv(samples_file.name, sep='\t')
+    elif patients_file.name[-4:] == '.csv':
+        samples_df = pd.read_csv(samples_file.name)
+    else:
+        raise gr.Error('Please make sure all files are .txt or .csv files')
+    
+    if mutations_file.name[-4:] == '.txt':
+        mutations_df = pd.read_csv(mutations_file.name, sep='\t')
+    elif mutations_file.name[-4:] == '.csv':
+        mutations_df = pd.read_csv(mutations_file.name)
+    else:
+        raise gr.Error('Please make sure all files are .txt or .csv files')
+    
+    if cna_file.name[-4:] == '.txt':
+        cna_df = pd.read_csv(cna_file.name, sep='\t')
+    elif cna_file.name[-4:] == '.csv':
+        cna_df = pd.read_csv(cna_file.name)
+    else:
+        raise gr.Error('Please make sure all files are .txt or .csv files')
 
     if tumor_id is None:
         raise gr.Error('Tumor Sample ID cannot be empty')
     else:
         print(tumor_id)
 
-    
     patients_columns = set(['PATIENT_ID', 'SEX'])
     for col in patients_columns:
         if col not in set(patients_df.columns.to_list()):
@@ -387,8 +412,14 @@ def extract_sample_ids(samples_file):
     # Read the file into a DataFrame
     if samples_file is None:
         return []
+    
+    if samples_file.name[-4:] == '.txt':
+        df = pd.read_csv(samples_file.name, sep='\t')
+    elif samples_file.name[-4:] == '.csv':
+        df = pd.read_csv(samples_file.name)
+    else:
+        raise ValueError('samples file must be .txt or .csv')
 
-    df = pd.read_csv(samples_file.name, sep='\t')
     # Assuming the column containing the sample IDs is named 'SampleID'
     sample_ids = df['SAMPLE_ID'].unique().tolist()
     return  gr.Dropdown(choices=sample_ids)
