@@ -1,1 +1,7 @@
 UNIQUE_SAMPLE_ID,CHROMOSOME,POSITION,REF_ALLELE,ALT_ALLELE
+manual input,chr12,25398284,C,A
+manual input,chr17,7578176,C,A
+manual input,chr4,55979551,C,T
+manual input,chr1,175916343,C,G
+manual input,chr17,62008712,C,A
+manual input,chr20,62326183,G,A
