@@ -525,7 +525,7 @@ def launch_gradio(server_name, server_port):
 
     with gr.Blocks(css=".markdown-box { border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); padding: 15px; margin-bottom: 20px; }") as demo:
 
-        d = gr.Dropdown(["Manual Inputs", "CSV File"])
+        d = gr.Dropdown(label='Select your preferred input method for tumor data to visualize predictions made by OncoNPC', choices=["Manual Inputs", "CSV File"])
 
         with gr.Row(visible=False) as r3:
             gr.Markdown(csv_description,elem_classes="markdown-box")
