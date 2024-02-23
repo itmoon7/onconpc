@@ -5,10 +5,9 @@ import sys
 sys.path.append('../codes')
 import utils as utils
 import gradio as gr
-import deconstruct_sigs_from_user_input as deconstructSigs
 import pickle
-import gradio as gr
-import os
+import pandas as pd
+import xgboost as xgb
 
 global image # path to explanation plot, defined as global for the purposes of update 
 global features
@@ -144,7 +143,6 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
         combined_cohort_age_stats_path='../data/combined_cohort_age_stats.pkl',
         mut_sig_weights_filepath='../data/mutation_signatures/sigProfiler*.csv'
     )
-    df_features_genie_final.to_csv('../data/onconpc_features2.csv', index=True)
     sample_id = tumor_id
     features = df_features_genie_final
 
@@ -172,67 +170,6 @@ def get_preds(patients_file, samples_file, mutations_file, cna_file, tumor_id):
                                                         save_plot=True) 
 
     return get_top3(predictions, tumor_id),  gr.Markdown(markdown_text), results[tumor_id]['explanation_plot']
-
-# def parse_inputs(age, gender, CNA_events, mutations, sample_id):
-
-#     # Normalization of age input
-#     combined_cohort_age_stats = None
-#     combined_cohort_age_stats_path = '../data/combined_cohort_age_stats.pkl'
-#     with open(combined_cohort_age_stats_path, "rb") as fp:
-#         combined_cohort_age_stats = pickle.load(fp)
-#     age =  (age - combined_cohort_age_stats['Age_mean']) / combined_cohort_age_stats['Std_mean']
-
-#     # Initialize data dictionary and populate with age, sex, and sample id
-#     data = {'AGE_AT_SEQ_REPORT': age, 'SEX':gender, 'SAMPLE_ID':sample_id} 
-#     df_patients = pd.DataFrame([data])
-    
-#     # Process CNA events: Expected format [[CNA, val], [CNA, val]]
-#     if len(CNA_events) > 0:
-#         CNA_events = CNA_events.split('|')
-#         for i in range(len(CNA_events)):
-#             # Split each event into CNA and value, and cast the value to integer
-#             CNA, val = CNA_events[i].split()
-#             CNA_events[i] = [CNA + ' CNA', int(val)] # Cast val to integer
-#     else:
-#         CNA_events = []
-
-#     CNA_dict = {}
-#     # Add CNA events to data dictionary
-#     for CNA, val in CNA_events:
-#         CNA_dict[CNA] = val
-
-#     df_cna = pd.DataFrame([CNA_dict])
-
-#     # Process mutations: Expected format [mut1, mut2, etc.]
-#     if len(mutations) > 0:
-#         mutations = mutations.split('| ')
-#         for i in range(len(mutations)):
-#             # Split each mutation entry and strip white space
-#             mutations[i] = ['manual input'] + mutations[i].split(', ')
-#             mutations[i] = [m.strip() for m in mutations[i]] # Strip white space
-#     else:
-#         mutations = []
-
-#     # Define mutation columns for DataFrame and create mutation DataFrame
-#     mutation_columns = ["UNIQUE_SAMPLE_ID", "HUGO_SYMBOL", "CHROMOSOME", "POSITION", "REF_ALLELE", "ALT_ALLELE"]
-#     mutation_full_df = pd.DataFrame(mutations, columns=mutation_columns) if mutations else pd.DataFrame(columns=mutation_columns)
-#     mutation_partial_df = mutation_full_df[['UNIQUE_SAMPLE_ID', 'HUGO_SYMBOL']]
-#     mutation_partial_df = mutation_partial_df.rename(columns={'UNIQUE_SAMPLE_ID':'Tumor_Sample_Barcode', 'HUGO_SYMBOL':'Hugo_Symbol'})
-#     mutation_df = mutation_full_df.drop('HUGO_SYMBOL', axis=1, inplace=False)
-    
-#     # Save mutation data to a CSV file
-#     mutation_df.to_csv('./mutation_input.csv', index=False)
-
-#     # Get base substitution file and read into DataFrame
-#     base_sub_file = deconstructSigs.get_base_substitutions() 
-#     df_trinuc_feats = pd.read_csv(base_sub_file) 
-#     # Obtain mutation signatures
-#     mutation_signatures = utils.obtain_mutation_signatures(df_trinuc_feats)  
-
-
-#     # Return processed features
-#     return utils.pre_process_features_genie(mutation_partial_df, df_cna, mutation_signatures, df_patients)[0] # just features, not labels
-
 
 def parse_inputs(age, gender, CNA_events, mutations):
     # Normalization of age input
@@ -273,6 +210,11 @@ def parse_inputs(age, gender, CNA_events, mutations):
             # Split each mutation entry and strip white space
             mutations[i] = ['manual input'] + mutations[i].split(', ')
             mutations[i] = [m.strip() for m in mutations[i]] # Strip white space
+            for j in range(len(mutations[i])):
+                try:
+                     mutations[i][j] = int(mutations[i][j])
+                except:
+                     pass
             #TODO: clean this up
             try:
                 data[mutations[i][1]] += 1.0
@@ -292,23 +234,22 @@ def parse_inputs(age, gender, CNA_events, mutations):
     except Exception as e:
         raise gr.Error(f'Error in somatic mutations. {e}')
     
-    # Save mutation data to a CSV file
-    mutation_df.to_csv('./mutation_input.csv', index=False)
+    mutation_signatures = pd.read_csv('./mutation_signatures_blank.csv').columns
+    if len(mutations) == 0:
+         for column in mutation_signatures:
+              data[column] = 0
+    else:
+        df_trinuc_feats = utils.get_snv_in_trinuc_context(mutation_df, 'UNIQUE_SAMPLE_ID', 'CHROMOSOME', 'POSITION', 'REF_ALLELE', 'ALT_ALLELE', None)
+        mutation_signatures = utils.obtain_mutation_signatures(df_trinuc_feats)
 
-    # Get base substitution file and read into DataFrame
-    base_sub_file = deconstructSigs.get_base_substitutions() 
-    df_trinuc_feats = pd.read_csv(base_sub_file) 
-    # Obtain mutation signatures
-    mutation_signatures = utils.obtain_mutation_signatures(df_trinuc_feats)    
+    # # Initialize data dictionary and populate with age and mutation signatures
+        for column in mutation_signatures.columns:
+            data[column] = mutation_signatures.loc['manual input'][column]
 
-    # Initialize data dictionary and populate with age and mutation signatures
-    for column in mutation_signatures.columns:
-        data[column] = mutation_signatures.loc[0][column]
-    
     # Add CNA events to data dictionary
     for CNA, val in CNA_events:
         data[CNA] = val
-    
+
     # Add zero values for missing features in data dictionary
     for column in all_features:
         if column not in data.keys():
@@ -316,7 +257,6 @@ def parse_inputs(age, gender, CNA_events, mutations):
 
     # Return the data as a DataFrame
     return pd.DataFrame([data])
-
 
 def get_preds_min_info(age, gender, CNA_events, mutations, output='Top Prediction'):
     """
@@ -338,7 +278,6 @@ def get_preds_min_info(age, gender, CNA_events, mutations, output='Top Predictio
 
     # Parse input features
     features = parse_inputs(age, gender, CNA_events, mutations)
-    features.to_csv('../genie1.csv', index=False)
     all_features = pd.read_csv('../data/onconpc_features.csv').drop('Unnamed: 0', axis=1).columns.tolist()
     columns_to_add = {column: [0] * len(features) for column in all_features if column not in features.columns}
     print(columns_to_add)
@@ -406,7 +345,6 @@ def get_top3(predictions, tumor_sample_id):
     build = build.rstrip('\n')
 
     return build
-
 
 def extract_sample_ids(samples_file):
     # Read the file into a DataFrame
