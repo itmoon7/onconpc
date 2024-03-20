@@ -1,16 +1,8 @@
 import React from "react";
 import YouTube from "react-youtube";
+import './TutorialVideo.css'
 
 function TutorialVideo() {
-  const opts = {
-    height: "390",
-    width: "640",
-    playerVars: {
-      autoplay: 1, // Auto-play the video on load
-    },
-  };
-
-  return <YouTube videoId="n4MbunbrnjQ" opts={opts} />;
+  return <YouTube videoId="n4MbunbrnjQ" class="video-container" />;
 }
-
 export default TutorialVideo;

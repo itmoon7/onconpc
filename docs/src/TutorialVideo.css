@@ -1,0 +1,5 @@
+.video-container {
+  height: calc(100vh - 100px);
+  padding-top: 1rem;
+  margin-top: 5rem;
+}
