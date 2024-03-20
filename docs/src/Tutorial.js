@@ -1,7 +1,8 @@
 import React from "react";
+import TutorialVideo from "./TutorialVideo";
 
 const Tutorial = () => {
-  return <div> insert tutorial</div>;
+  return <TutorialVideo />;
 };
 
 export default Tutorial;
