@@ -8,7 +8,6 @@ function App() {
   return (
     <Router>
       <div className="App">
-        testing deployment
         <Navbar />
         <Routes>
           <Route path="/" element={<Gradio />} />

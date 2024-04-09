@@ -9,7 +9,7 @@ const Tutorial = () => {
       <iframe
         width="1040"
         height="590"
-        src="https://www.youtube.com/embed/n4MbunbrnjQ"
+        src="https://www.youtube.com/embed/wYl8W8SrppU"
         title="YouTube video player"
         frameborder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
