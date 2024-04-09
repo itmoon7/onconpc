@@ -8,8 +8,5 @@
     "main.a7e3d019.js.map": "/onconpc/static/js/main.a7e3d019.js.map",
     "453.2d5ea3da.chunk.js.map": "/onconpc/static/js/453.2d5ea3da.chunk.js.map"
   },
-  "entrypoints": [
-    "static/css/main.d44c4954.css",
-    "static/js/main.a7e3d019.js"
-  ]
+  "entrypoints": ["static/css/main.d44c4954.css", "static/js/main.a7e3d019.js"]
 }
