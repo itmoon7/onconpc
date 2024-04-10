@@ -18,7 +18,7 @@ If you do not have Conda installed, please install [Miniconda](https://docs.cond
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/your-github-username/onconpc.git
+git clone https://github.com/itmoon7/onconpc.git
 cd onconpc
 ```
 
