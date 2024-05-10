@@ -24,7 +24,7 @@ const Navbar = () => {
             textDecoration: "none",
           }} // Added textDecoration: "none" to mimic <a> tag styling
         >
-          Tutorial
+          Read Before Use
         </Link>
         <Link
           to="/tutorial"
