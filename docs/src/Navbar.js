@@ -17,6 +17,16 @@ const Navbar = () => {
       </div>
       <div>
         <Link
+          to="/readbeforeuse"
+          style={{
+            color: "black",
+            marginRight: "1rem",
+            textDecoration: "none",
+          }} // Added textDecoration: "none" to mimic <a> tag styling
+        >
+          Tutorial
+        </Link>
+        <Link
           to="/tutorial"
           style={{
             color: "black",
