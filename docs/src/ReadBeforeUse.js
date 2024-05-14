@@ -9,9 +9,7 @@ const ReadBeforeUse = () => {
     <div style={{ paddingTop: "2rem" }}>
       <strong>Welcome to the OncoNPC Cancer Type Prediction Tool</strong>
       <p>
-        This tool is designed to help researchers and clinicians explore
-        potential cancer types based on tumor somatic genetics information,
-        using a machine learning algorithm.
+        This tool is designed to predict the potential cancer type for a tumor among 22 cancer types, based on user-provided tumor somatic genetics information. From the user input, the tool generates features including single nucleotide variant (SNV) somatic mutations, copy number alteration (CNA) events, mutation signatures, and patient demographics (age and sex). It then utilizes a tree-based machine learning algorithm to analyze these features and produces probabilistic predictions for each likely cancer type.
       </p>
       <p>
         Please review the following important disclosures before you proceed
@@ -22,7 +20,7 @@ const ReadBeforeUse = () => {
           <li>
             This OncoNPC cancer type prediction tool is based on a published
             article in{" "}
-            <a href="https://www.nature.com/articles/s41591-023-02482-6">
+            <a href="https://rdcu.be/dHVaq">
               Nature Medicine
             </a>
             .
@@ -54,7 +52,7 @@ const ReadBeforeUse = () => {
         For detailed information regarding the base model, performance metrics,
         implications of the predictions, utilized features, and processing,
         please refer to{" "}
-        <a href="https://www.nature.com/articles/s41591-023-02482-6">
+        <a href="https://rdcu.be/dHVaq">
           our paper
         </a>
         .
