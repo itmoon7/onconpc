@@ -18,8 +18,8 @@ const ReadBeforeUse = () => {
       <div style={{display: 'inline-block', textAlign: 'left'}}>
         <ul style={listStyle}>
           <li>
-            This OncoNPC cancer type prediction tool is based on a published
-            article in{" "}
+            This OncoNPC cancer type prediction tool is based on our publication 
+            in{" "}
             <a href="https://rdcu.be/dHVaq">
               Nature Medicine
             </a>
