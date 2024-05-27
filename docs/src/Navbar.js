@@ -1,5 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom"; // Import Link
+import { Link } from "react-router-dom";
+import logo from "./onconpc_logo_clipped.png";
 
 const Navbar = () => {
   return (
@@ -7,12 +8,18 @@ const Navbar = () => {
       style={{
         display: "flex",
         justifyContent: "space-between",
+        alignItems: "center", 
         padding: "1rem",
         background: "#bde3f6",
         color: "black",
       }}
     >
-      <div>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <img
+          src={logo}
+          alt="OncoNPC Logo"
+          style={{ height: "40px", marginRight: "1rem" }}
+        />
         <span>OncoNPC</span>
       </div>
       <div>
@@ -22,7 +29,7 @@ const Navbar = () => {
             color: "black",
             marginRight: "1rem",
             textDecoration: "none",
-          }} // Added textDecoration: "none" to mimic <a> tag styling
+          }}
         >
           Read Before Use
         </Link>
@@ -32,7 +39,7 @@ const Navbar = () => {
             color: "black",
             marginRight: "1rem",
             textDecoration: "none",
-          }} // Added textDecoration: "none" to mimic <a> tag styling
+          }}
         >
           Tutorial
         </Link>
@@ -42,7 +49,7 @@ const Navbar = () => {
             color: "black",
             marginRight: "1rem",
             textDecoration: "none",
-          }} // Added textDecoration: "none" for consistency
+          }}
         >
           Prediction Tool
         </Link>
