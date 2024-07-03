@@ -2,7 +2,16 @@
 
 We developed **OncoNPC** (**Onco**logy **N**GS-based **P**rimary cancer type **C**lassifier), a molecular cancer type classifier trained on multicenter targeted panel sequencing data. OncoNPC utilizes somatic alterations including mutations (single nucleotide variants and indels), mutational signatures, copy number alterations, as well as patient age at the time of sequencing and sex to jointly predict cancer type.
 
-To ensure consistent execution of the code, we recommend using the conda environment specified in `onconpc_conda.yml`. This file contains all the necessary dependencies with their specific versions.
+## Tutorial Video and Visualization Tool
+We have created a short tutorial video to guide you through the setup and usage of OncoNPC's GitHub-based visualization tool, which helps visualize cancer type predictions based on user-provided inputs and model explanations.
+
+<div align="center">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/I0mmmvuC5ug?si=46OA3-bGYbKUO4Uh" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+You can also directly access the visualization tool [here](https://itmoon7.github.io/onconpc/).
+
+We'll walk you through the installation of the OncoNPC pipeline for feature processing and inference.
 
 ## Table of Contents
 - [Setting up the Conda Environment](#setting-up-the-conda-environment)
@@ -12,6 +21,8 @@ To ensure consistent execution of the code, we recommend using the conda environ
 - [Link to Manuscript](#link-to-manuscript)
 
 ## Setting up the Conda Environment
+
+To ensure consistent execution of the code, we recommend using the conda environment specified in `onconpc_conda.yml`. This file contains all the necessary dependencies with their specific versions.
 
 ### 1. Install Conda
 If you do not have Conda installed, please install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution).
