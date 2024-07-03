@@ -5,7 +5,9 @@ We developed **OncoNPC** (**Onco**logy **N**GS-based **P**rimary cancer type **C
 ## Tutorial Video and Visualization Tool
 We have created a short tutorial video to guide you through the usage of OncoNPC's GitHub-based visualization tool, which visualizes cancer type predictions based on user-provided inputs and model explanations.
 
-[![Watch the video](https://img.youtube.com/vi/I0mmmvuC5ug/0.jpg)](https://www.youtube.com/watch?v=I0mmmvuC5ug?si=46OA3-bGYbKUO4Uh)
+Click the image below to watch the tutorial video on YouTube:
+
+[![Watch the video](assets/onconpc_visualization_cover)](https://www.youtube.com/watch?v=I0mmmvuC5ug?si=46OA3-bGYbKUO4Uh)
 
 You can also directly access the visualization tool [here](https://itmoon7.github.io/onconpc/).
 
