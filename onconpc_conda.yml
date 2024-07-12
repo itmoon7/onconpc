@@ -20,3 +20,7 @@ dependencies:
   - absl-py=2.0.0
   - r-base=4.3.1
   - r-essentials
+  - bioconductor-bsgenome=1.70.1
+  - bioconductor-bsgenome.hsapiens.ucsc.hg19=1.4.3
+  - bioconductor-genomeinfodb=1.38.1
+  - bioconda::r-deconstructsigs=1.9.0

@@ -41,31 +41,14 @@ conda activate onconpc_conda_env
 ```
 
 For further details on the software and package versions, please refer to the `onconpc_conda.yml` file.
-After setting up the Conda environment and installing the necessary Python packages, you will also need to install R packages crucial for processing mutation data and generating features for the OncoNPC model.
 
-The script `install_r_packages_onconpc.sh` is provided in the main repository for installing these R packages.
+## Utilizing Public Tumor Sequencing Data from AACR Project GENIE
 
-### 5. Making the Script Executable
-Before running the script, you need to make it executable. In the root directory of the project, run:
-```bash
-chmod +x install_r_packages_onconpc.sh
-```
-
-### 6. Running the Script
-Execute the script to install the necessary R packages:
-```bash
-./install_r_packages_onconpc.sh
-```
-
-This script will handle the installation of R packages required for the analysis, including the setup for SNV in tri-nucleotide context and mutation signature features using the `deconstructSigs` R library. With the environment activated, you can now run the code within this repository.
-
-## Utilizing Public Tumor Sequencing Data from AACR GENIE
-
-### Introduction to AACR GENIE Data
+### Introduction to AACR Project GENIE Data
 
 OncoNPC was originally trained using data from multiple sources, including publicly available data from AACR Project GENIE, specifically from two cancer centers (MSK and VICC), as well as private institutional data from DFCI (Dana-Farber Cancer Institute). This repository provides the flexibility to process and train the OncoNPC model using solely the publicly available data from AACR Project GENIE.
 
-### Required Data Files from AACR GENIE
+### Required Data Files from AACR Project GENIE
 
 For integrating AACR GENIE data with OncoNPC, you will need:
 
@@ -74,9 +57,9 @@ For integrating AACR GENIE data with OncoNPC, you will need:
 3. **data_clinical_sample.txt**
 4. **data_CNA.txt**
 
-### Integrating AACR GENIE Data with OncoNPC
+### Integrating AACR Project GENIE Data with OncoNPC
 
-1. **Accessing AACR GENIE Data**: Begin by obtaining the AACR GENIE data as described in their [Data Guide](https://www.aacr.org/wp-content/uploads/2023/09/14.0-data_guide.pdf).
+1. **Accessing AACR Project GENIE Data**: Begin by obtaining the AACR GENIE data as described in their [Data Guide](https://www.aacr.org/wp-content/uploads/2024/02/15.0-public_data_guide-.pdf). For programmatically downloading the data using the Synapse Python client, refer to the following GitHub repository: [aacr_projects_from_synapse](https://github.com/itmoon7/aacr_projects_from_synapse). This repository contains scripts and instructions to facilitate the download process.
 
 2. **Preparing Mutataion Signature features**: 
    - The pre-processing code then uses weight matrices from the [COSMIC Sanger Signatures](https://cancer.sanger.ac.uk/signatures/sbs/) to generate continuous values for mutation signatures.
