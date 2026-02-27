@@ -6,7 +6,7 @@ const Gradio = () => {
       <iframe
         title="onconpc"
         className="gradio"
-        src="https://jenniferzhou33-onconpc-visualization.hf.space"
+        src="https://onconpc-onconpc-visualization.hf.space"
         frameborder="0"
         width="850"
         height="450"
